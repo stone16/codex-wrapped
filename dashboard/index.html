@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Codex Wrapped</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <div class="glow glow-one"></div>
+      <div class="glow glow-two"></div>
+      <div class="glow glow-three"></div>
+    </div>
+
+    <main class="wrap">
+      <header class="hero" data-reveal style="--delay: 0ms">
+        <div class="brand">
+          <div class="logo">
+            <span class="logo-mark">O</span>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title" id="title">Codex</span>
+            <span class="brand-subtitle" id="subtitle">Your year in the Codex CLI</span>
+          </div>
+        </div>
+        <div class="wrapped">
+          <span class="wrapped-label">wrapped</span>
+          <span class="wrapped-year" id="year">--</span>
+        </div>
+        <div class="hero-meta">
+          <span class="pill">Generated <span id="generated-at">--</span></span>
+          <span class="pill">Sessions <span id="sessions-dir">--</span></span>
+        </div>
+      </header>
+
+      <section class="grid three top-stats" data-reveal style="--delay: 80ms">
+        <div class="stat-card">
+          <span class="label">Started</span>
+          <span class="sub" id="first-run">--</span>
+          <span class="value" id="days-since">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Most Active Day</span>
+          <span class="sub" id="most-active-weekday">--</span>
+          <span class="value" id="most-active-day">--</span>
+          <span class="meta" id="most-active-count">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Weekly Activity</span>
+          <div class="weekday-chart" id="weekday-chart"></div>
+          <div class="weekday-labels" id="weekday-labels"></div>
+        </div>
+      </section>
+
+      <section class="panel heatmap-panel" data-reveal style="--delay: 140ms">
+        <div class="panel-header">
+          <h2>Activity</h2>
+          <div class="legend" id="heatmap-legend"></div>
+        </div>
+        <div class="heatmap-scroll">
+          <div class="heatmap-months" id="heatmap-months"></div>
+          <div class="heatmap" id="heatmap"></div>
+        </div>
+        <div class="heatmap-foot">
+          <span>Less</span>
+          <div class="heatmap-steps">
+            <span class="heat-swatch level-0"></span>
+            <span class="heat-swatch level-1"></span>
+            <span class="heat-swatch level-2"></span>
+            <span class="heat-swatch level-3"></span>
+            <span class="heat-swatch level-4"></span>
+            <span class="heat-swatch level-5"></span>
+          </div>
+          <span>More</span>
+        </div>
+      </section>
+
+      <section class="grid two" data-reveal style="--delay: 200ms">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Top Models</h2>
+            <span class="tag">By total tokens</span>
+          </div>
+          <div class="highlight">
+            <span class="label" id="highlight-label">Signal</span>
+            <span class="value" id="highlight-value">--</span>
+            <span class="sub" id="highlight-sub">--</span>
+          </div>
+          <div class="list" id="top-models"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Cache Efficiency</h2>
+            <span class="tag">Prompt caching impact</span>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <span class="label">Cache Read</span>
+              <span class="value" id="cache-read">--</span>
+            </div>
+            <div class="metric">
+              <span class="label">Cache Hit</span>
+              <span class="value" id="cache-hit">--</span>
+            </div>
+            <div class="metric">
+              <span class="label">Input Tokens</span>
+              <span class="value" id="cache-input">--</span>
+            </div>
+            <div class="metric">
+              <span class="label">Output Tokens</span>
+              <span class="value" id="cache-output">--</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel stats" data-reveal style="--delay: 260ms">
+        <div class="panel-header">
+          <h2>Totals</h2>
+          <span class="tag" id="totals-tag">Year-wide snapshot</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <span class="label">Sessions</span>
+            <span class="value" id="stat-sessions">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Turns</span>
+            <span class="value" id="stat-turns">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Total Tokens</span>
+            <span class="value" id="stat-total-tokens">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Cost</span>
+            <span class="value" id="stat-cost">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Max Streak</span>
+            <span class="value" id="stat-streak">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="label">Cache Hit Rate</span>
+            <span class="value" id="stat-cache-rate">--</span>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer" data-reveal style="--delay: 320ms">
+        <span>openai.com/codex</span>
+      </footer>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

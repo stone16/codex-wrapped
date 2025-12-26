@@ -1,0 +1,16 @@
+defaults:
+  year: current
+  codex_home: "~/.codex"
+  sessions_subdir: "sessions"
+  pricing_source: "lite_llm"
+  pricing_url: "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+  pricing: "./pricing.yaml"
+  output: "./dashboard/data.json"
+  locale: "en-US"
+  timezone: "local"
+  fallback_model: "gpt-5"
+
+dashboard:
+  title: "Codex"
+  subtitle: "Your year in the Codex CLI"
+  highlight_label: "Signal"
