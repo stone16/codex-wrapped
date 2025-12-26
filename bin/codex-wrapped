@@ -1,0 +1,178 @@
+#!/usr/bin/env node
+
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const packageRoot = path.resolve(__dirname, "..");
+
+function printHelp() {
+  console.log(`
+codex-wrapped - Generate a Spotify Wrapped-style summary of your Codex CLI usage
+
+USAGE:
+  codex-wrapped [options]
+
+OPTIONS:
+  --out <dir>      Output directory for the dashboard (default: ./codex-wrapped)
+  --image <path>   Output PNG path (default: <outDir>/codex-wrapped.png)
+  --config <path>  Path to config file (default: codex-wrapped.config.yaml)
+  --help, -h       Show this help message
+
+EXAMPLES:
+  npx codex-wrapped
+  npx codex-wrapped --out ./my-wrapped
+  npx codex-wrapped --config ./custom-config.yaml
+`);
+}
+
+function parseArgs(args) {
+  const result = {
+    outDir: "./codex-wrapped",
+    configPath: null,
+    imagePath: null,
+    help: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--help" || arg === "-h") {
+      result.help = true;
+    } else if (arg === "--out" && args[i + 1]) {
+      result.outDir = args[++i];
+    } else if (arg === "--config" && args[i + 1]) {
+      result.configPath = args[++i];
+    } else if (arg === "--image" && args[i + 1]) {
+      result.imagePath = args[++i];
+    }
+  }
+
+  return result;
+}
+
+async function copyDir(src, dest) {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyDir(srcPath, destPath);
+    } else {
+      await fs.copyFile(srcPath, destPath);
+    }
+  }
+}
+
+async function runBuildScript(outDir, configPath) {
+  const buildScript = path.join(packageRoot, "scripts", "build-data.mjs");
+  const outputPath = path.join(outDir, "data.json");
+
+  // Set environment variables for the build script
+  const env = {
+    ...process.env,
+    CODEX_WRAPPED_OUTPUT: outputPath,
+  };
+
+  if (configPath) {
+    env.CODEX_WRAPPED_CONFIG = path.resolve(configPath);
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("node", [buildScript], {
+      env,
+      stdio: "inherit",
+      cwd: packageRoot,
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Build script exited with code ${code}`));
+      }
+    });
+
+    child.on("error", reject);
+  });
+}
+
+async function runRenderScript(dataPath, imagePath) {
+  const renderScript = path.join(packageRoot, "scripts", "render-image.mjs");
+
+  const env = {
+    ...process.env,
+    CODEX_WRAPPED_DATA: dataPath,
+    CODEX_WRAPPED_IMAGE_OUTPUT: imagePath,
+  };
+
+  return new Promise((resolve, reject) => {
+    const child = spawn("node", [renderScript], {
+      env,
+      stdio: "inherit",
+      cwd: packageRoot,
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Render script exited with code ${code}`));
+      }
+    });
+
+    child.on("error", reject);
+  });
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.help) {
+    printHelp();
+    process.exit(0);
+  }
+
+  const outDir = path.resolve(args.outDir);
+  console.log(`\n🎁 Codex Wrapped\n`);
+  console.log(`Output directory: ${outDir}\n`);
+
+  // Copy dashboard assets
+  const dashboardSrc = path.join(packageRoot, "dashboard");
+  console.log("📦 Copying dashboard assets...");
+  await copyDir(dashboardSrc, outDir);
+
+  // Run the build script to generate data.json
+  console.log("📊 Generating usage data...\n");
+  try {
+    await runBuildScript(outDir, args.configPath);
+  } catch (error) {
+    console.error("❌ Failed to generate data:", error.message);
+    process.exit(1);
+  }
+
+  const dataPath = path.join(outDir, "data.json");
+  const imagePath = args.imagePath ? path.resolve(args.imagePath) : path.join(outDir, "codex-wrapped.png");
+
+  console.log("🖼️  Rendering shareable image...\n");
+  try {
+    await runRenderScript(dataPath, imagePath);
+  } catch (error) {
+    console.error("❌ Failed to render image:", error.message);
+    process.exit(1);
+  }
+
+  console.log(`\n✅ Wrapped image generated at: ${imagePath}`);
+  console.log(`✅ Dashboard generated at: ${outDir}`);
+  console.log(`\n📂 Open ${path.join(outDir, "index.html")} in your browser to view your Codex Wrapped!\n`);
+}
+
+main().catch((error) => {
+  console.error("Error:", error.message);
+  process.exit(1);
+});

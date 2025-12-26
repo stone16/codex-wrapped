@@ -1,0 +1,51 @@
+{
+  "name": "codex-wrapped",
+  "version": "0.1.0",
+  "description": "Generate a Spotify Wrapped-style summary of your Codex CLI usage",
+  "keywords": [
+    "codex",
+    "wrapped",
+    "cli",
+    "dashboard",
+    "usage",
+    "analytics"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "codex-wrapped": "./bin/codex-wrapped"
+  },
+  "files": [
+    "bin/",
+    "dashboard/",
+    "scripts/",
+    "pricing.yaml",
+    "codex-wrapped.config.yaml"
+  ],
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "satori": "^0.18.3"
+  },
+  "devDependencies": {
+    "pixelmatch": "^5.3.0",
+    "playwright": "^1.49.0",
+    "pngjs": "^7.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build-data.mjs",
+    "render:image": "node scripts/render-image.mjs",
+    "verify:image": "node scripts/verify-image.mjs",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stometa/codex-wrapped.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stometa/codex-wrapped/issues"
+  },
+  "homepage": "https://github.com/stometa/codex-wrapped#readme"
+}
