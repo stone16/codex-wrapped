@@ -11,7 +11,6 @@ const data = await response.json();
 const summary = data.summary || {};
 const activity = data.activity || {};
 const models = data.models || [];
-const notes = data.notes || {};
 const config = data.config || {};
 const locale = config.locale || "en-US";
 const timeZone = config.timezone && config.timezone !== "local" ? config.timezone : undefined;
@@ -19,6 +18,10 @@ const timeZone = config.timezone && config.timezone !== "local" ? config.timezon
 const numberFormatter = new Intl.NumberFormat(locale);
 const shortFormatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const formatCompact = (value) => {
+  const safe = Number(value || 0);
+  return safe >= 1_000_000 ? shortFormatter.format(safe) : numberFormatter.format(safe);
+};
 
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = data.year ?? "--";
@@ -38,9 +41,9 @@ if (generatedAtEl && data.generatedAt) {
   generatedAtEl.textContent = generatedDate.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone });
 }
 
-const sessionsDirEl = document.getElementById("sessions-dir");
-if (sessionsDirEl) {
-  sessionsDirEl.textContent = shortenPath(notes.sessionsDir || "~/.codex/sessions");
+const sessionsCountEl = document.getElementById("sessions-count");
+if (sessionsCountEl) {
+  sessionsCountEl.textContent = numberFormatter.format(summary.sessions || 0);
 }
 
 const firstRunEl = document.getElementById("first-run");
@@ -67,7 +70,7 @@ if (mostActiveDayEl && mostActiveCountEl && mostActiveWeekdayEl) {
       mostActiveDayEl.textContent = summary.mostActiveDay.formattedDate || "--";
       mostActiveWeekdayEl.textContent = "--";
     }
-    mostActiveCountEl.textContent = `${numberFormatter.format(summary.mostActiveDay.count || 0)} turns`;
+    mostActiveCountEl.textContent = `${formatCompact(summary.mostActiveDay.count || 0)} turns`;
   } else {
     mostActiveDayEl.textContent = "--";
     mostActiveWeekdayEl.textContent = "--";
@@ -89,22 +92,22 @@ if (highlightValueEl && highlightSubEl) {
 }
 
 setStat("stat-sessions", summary.sessions, numberFormatter);
-setStat("stat-turns", summary.turns, numberFormatter);
-setStat("stat-total-tokens", summary.totalTokens, numberFormatter);
+setStat("stat-turns", summary.turns, formatCompact);
+setStat("stat-total-tokens", summary.totalTokens, formatCompact);
 
 const cacheReadEl = document.getElementById("cache-read");
 if (cacheReadEl) {
-  cacheReadEl.textContent = numberFormatter.format(summary.cachedInputTokens || 0);
+  cacheReadEl.textContent = formatCompact(summary.cachedInputTokens || 0);
 }
 
 const cacheInputEl = document.getElementById("cache-input");
 if (cacheInputEl) {
-  cacheInputEl.textContent = numberFormatter.format(summary.inputTokens || 0);
+  cacheInputEl.textContent = formatCompact(summary.inputTokens || 0);
 }
 
 const cacheOutputEl = document.getElementById("cache-output");
 if (cacheOutputEl) {
-  cacheOutputEl.textContent = numberFormatter.format(summary.outputTokens || 0);
+  cacheOutputEl.textContent = formatCompact(summary.outputTokens || 0);
 }
 
 const cacheHitEl = document.getElementById("cache-hit");
@@ -131,26 +134,13 @@ if (streakEl) {
 
 renderHeatmap(activity, summary.maxDailyCount || 0, data.year);
 renderWeekdayChart(activity.weekdayCounts || []);
-renderList("top-models", models, "tokens");
+renderList("top-models", models.slice(0, 3), "tokens");
 
 function setStat(id, value, formatter) {
   const el = document.getElementById(id);
   if (!el) return;
   const safeValue = value ?? 0;
   el.textContent = formatter.format(safeValue);
-}
-
-function shortenPath(value) {
-  if (!value) return "";
-  const home = value.replace(/^[A-Z]:\\\\/i, "");
-  const codexIndex = home.indexOf(".codex");
-  if (codexIndex !== -1) {
-    const rest = home.slice(codexIndex + ".codex".length).replace(/^\/+/, "");
-    return rest ? `~/.codex/${rest}` : "~/.codex";
-  }
-  const parts = value.split("/");
-  if (parts.length <= 3) return value;
-  return `${parts.slice(0, 2).join("/")}/.../${parts.slice(-1)}`;
 }
 
 function formatShortDate(dateStr, localeValue, timeZoneValue) {
@@ -230,7 +220,7 @@ function renderHeatmap(activityData, maxCount, year) {
   });
 
   if (legend) {
-    legend.textContent = `Jan - Dec | ${maxCount} max/day`;
+    legend.textContent = `Jan - Dec | ${formatCompact(maxCount)} max/day`;
   }
 }
 
@@ -347,17 +337,12 @@ function renderList(containerId, items, metricKey) {
     const name = document.createElement("span");
     name.className = "list-name";
     name.textContent = item.name;
-    const sub = document.createElement("span");
-    sub.className = "list-sub";
-    const percentage = item.percentage ? `${(item.percentage * 100).toFixed(1)}%` : "";
-    sub.textContent = percentage ? `${percentage} share` : "";
     main.appendChild(name);
-    main.appendChild(sub);
 
     const metric = document.createElement("div");
     metric.className = "list-metric";
     const metricValue = item[metricKey] ?? item.tokens ?? 0;
-    metric.textContent = `${shortFormatter.format(metricValue)} tokens`;
+    metric.textContent = shortFormatter.format(metricValue);
 
     row.appendChild(rank);
     row.appendChild(main);

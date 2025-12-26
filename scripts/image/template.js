@@ -2,8 +2,8 @@ import { colors, layout, spacing, typography } from "./design-tokens.js";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HEAT_CELL = 10;
-const HEAT_GAP = 4;
-const WEEKDAY_BAR_HEIGHT = 72;
+const HEAT_GAP = 3;
+const WEEKDAY_BAR_HEIGHT = 56;
 
 function h(type, props, ...children) {
   const flatChildren = children.flat().filter((child) => child !== null && child !== undefined && child !== false);
@@ -30,19 +30,6 @@ function formatShortDate(dateStr, locale, timeZone) {
   const date = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone });
-}
-
-function shortenPath(value) {
-  if (!value) return "";
-  const normalized = value.replace(/^[A-Z]:\\\\/i, "");
-  const codexIndex = normalized.indexOf(".codex");
-  if (codexIndex !== -1) {
-    const rest = normalized.slice(codexIndex + ".codex".length).replace(/^\/+/, "");
-    return rest ? `~/.codex/${rest}` : "~/.codex";
-  }
-  const parts = value.split("/");
-  if (parts.length <= 3) return value;
-  return `${parts.slice(0, 2).join("/")}/.../${parts.slice(-1)}`;
 }
 
 function formatDateLabel(dateValue, locale, timeZone) {
@@ -122,12 +109,20 @@ function formatDateKey(date) {
 function sectionHeader(title, tag) {
   return h(
     "div",
-    { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
+    {
+      style: {
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        gap: spacing[2],
+      },
+    },
     h(
       "span",
       {
         style: {
-          fontSize: typography.size.lg,
+          fontSize: typography.size.xl,
           fontWeight: typography.weight.bold,
         },
       },
@@ -138,10 +133,10 @@ function sectionHeader(title, tag) {
           "span",
           {
             style: {
-              fontSize: typography.size.sm,
-              color: colors.text.faint,
+              fontSize: typography.size.xs,
+              color: colors.text.muted,
               textTransform: "uppercase",
-              letterSpacing: 1.5,
+              letterSpacing: 1.4,
             },
           },
           tag
@@ -159,11 +154,11 @@ function statCard(children) {
         backgroundColor: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: layout.radius.lg,
-        padding: spacing[5],
+        padding: spacing[3],
         boxShadow: layout.shadow,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[2],
+        gap: spacing[1],
       },
     },
     children
@@ -178,11 +173,11 @@ function panel(children, extraStyle = {}) {
         backgroundColor: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: layout.radius.lg,
-        padding: spacing[5],
+        padding: spacing[3],
         boxShadow: layout.shadow,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[4],
+        gap: spacing[2],
         ...extraStyle,
       },
     },
@@ -196,9 +191,10 @@ function labelText(text) {
     {
       style: {
         textTransform: "uppercase",
-        fontSize: typography.size.sm,
-        letterSpacing: 2,
-        color: colors.text.faint,
+        fontSize: typography.size.xs,
+        letterSpacing: 1.4,
+        color: colors.text.muted,
+        fontWeight: typography.weight.medium,
       },
     },
     text
@@ -210,8 +206,8 @@ function renderWeekdayChart(counts) {
   const max = Math.max(...safeCounts, 1);
   const maxIndex = safeCounts.findIndex((value) => value === max);
 
-  const barWidth = 24;
-  const barGap = 8;
+  const barWidth = 18;
+  const barGap = 4;
 
   const bars = safeCounts.map((count, index) => {
     const height = Math.max(10, Math.round((count / max) * WEEKDAY_BAR_HEIGHT));
@@ -236,9 +232,10 @@ function renderWeekdayChart(counts) {
         style: {
           width: barWidth,
           fontSize: typography.size.xs,
-          color: isHighlight ? colors.text.primary : colors.text.faint,
+          color: isHighlight ? colors.text.primary : colors.text.muted,
+          fontWeight: isHighlight ? typography.weight.bold : typography.weight.regular,
           textAlign: "center",
-          borderBottom: isHighlight ? `3px solid ${colors.accent.warm}` : "3px solid transparent",
+          borderBottom: isHighlight ? `2px solid ${colors.accent.warm}` : "2px solid transparent",
           paddingBottom: 2,
         },
       },
@@ -257,7 +254,7 @@ function renderWeekdayChart(counts) {
           flexDirection: "row",
           alignItems: "flex-end",
           gap: barGap,
-          height: WEEKDAY_BAR_HEIGHT + 20,
+          height: WEEKDAY_BAR_HEIGHT + 8,
         },
       },
       bars
@@ -311,8 +308,10 @@ function renderHeatmap(activity, maxDailyCount, year) {
         style: {
           width,
           fontSize: typography.size.xs,
-          color: colors.text.faint,
+          color: colors.text.muted,
           textAlign: "left",
+          textTransform: "uppercase",
+          letterSpacing: 1,
         },
       },
       months[entry.monthIndex] || "--"
@@ -327,6 +326,8 @@ function renderHeatmap(activity, maxDailyCount, year) {
       const count = dailyCounts[dateKey] || 0;
       const level = getIntensityLevel(count, maxDailyCount);
       const isStreak = maxStreakDays.has(dateKey);
+      const border = isStreak ? `1px solid ${colors.accent.strong}` : "1px solid rgba(35, 31, 25, 0.05)";
+      const boxShadow = isStreak ? "0 0 6px rgba(16, 163, 127, 0.35)" : "none";
       return h(
         "div",
         {
@@ -335,7 +336,8 @@ function renderHeatmap(activity, maxDailyCount, year) {
             height: HEAT_CELL,
             borderRadius: 3,
             backgroundColor: colors.heatmap[Math.min(level, colors.heatmap.length - 1)],
-            border: isStreak ? `1px solid ${colors.accent.strong}` : "1px solid transparent",
+            border,
+            boxShadow,
           },
         },
         ""
@@ -351,13 +353,22 @@ function renderHeatmap(activity, maxDailyCount, year) {
 
   const heatmapFoot = h(
     "div",
-    { style: { display: "flex", flexDirection: "row", alignItems: "center", gap: spacing[2], fontSize: typography.size.xs, color: colors.text.faint } },
+    {
+      style: {
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing[1],
+        fontSize: typography.size.xs,
+        color: colors.text.muted,
+      },
+    },
     h("span", null, "Less"),
     h(
       "div",
       { style: { display: "flex", flexDirection: "row", gap: 4 } },
       colors.heatmap.slice(0, 6).map((color) =>
-        h("div", { style: { width: 12, height: 12, borderRadius: 3, backgroundColor: color } })
+        h("div", { style: { width: 9, height: 9, borderRadius: 3, backgroundColor: color } })
       )
     ),
     h("span", null, "More")
@@ -365,7 +376,7 @@ function renderHeatmap(activity, maxDailyCount, year) {
 
   return h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[3] } },
+    { style: { display: "flex", flexDirection: "column", gap: spacing[2] } },
     h(
       "div",
       { style: { display: "flex", flexDirection: "row", gap: HEAT_GAP } },
@@ -391,7 +402,7 @@ function renderModelList(items, formatter) {
           border: "1px solid rgba(48, 36, 24, 0.06)",
           padding: 12,
           fontSize: typography.size.sm,
-          color: colors.text.faint,
+          color: colors.text.muted,
         },
       },
       "No data yet."
@@ -401,40 +412,38 @@ function renderModelList(items, formatter) {
   return h(
     "div",
     { style: { display: "flex", flexDirection: "column", gap: spacing[2] } },
-    items.map((item, index) => {
-      const percentage = item.percentage ? `${(item.percentage * 100).toFixed(1)}%` : "";
-      return h(
+    items.map((item, index) =>
+      h(
         "div",
         {
           style: {
             backgroundColor: colors.surfaceStrong,
-            borderRadius: 12,
+            borderRadius: 10,
             border: "1px solid rgba(48, 36, 24, 0.06)",
-            padding: 10,
+            padding: 8,
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            gap: spacing[3],
+            gap: spacing[1],
           },
         },
         h(
           "div",
-          { style: { width: 32, textAlign: "right", fontWeight: typography.weight.bold, color: colors.accent.primary } },
+          { style: { width: 28, textAlign: "right", fontWeight: typography.weight.bold, color: colors.accent.primary } },
           String(index + 1).padStart(2, "0")
         ),
         h(
           "div",
-          { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 } },
-          h("span", { style: { fontSize: typography.size.md } }, item.name),
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, percentage ? `${percentage} share` : "")
+          { style: { flex: 1 } },
+          h("span", { style: { fontSize: typography.size.md } }, item.name)
         ),
         h(
           "div",
           { style: { fontSize: typography.size.sm, color: colors.text.muted, textAlign: "right" } },
-          `${formatter.format(item.tokens ?? 0)} tokens`
+          formatter.format(item.tokens ?? 0)
         )
-      );
-    })
+      )
+    )
   );
 }
 
@@ -442,7 +451,6 @@ export function buildWrappedTemplate(data) {
   const summary = data.summary || {};
   const activity = data.activity || {};
   const models = Array.isArray(data.models) ? data.models : [];
-  const notes = data.notes || {};
   const config = data.config || {};
   const locale = config.locale || "en-US";
   const timeZone = config.timezone && config.timezone !== "local" ? config.timezone : undefined;
@@ -450,10 +458,15 @@ export function buildWrappedTemplate(data) {
   const numberFormatter = new Intl.NumberFormat(locale);
   const shortFormatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  const formatCompact = (value) => {
+    const safe = Number(value || 0);
+    if (safe >= 1_000_000) return shortFormatter.format(safe);
+    return numberFormatter.format(safe);
+  };
 
   const year = data.year ?? new Date().getFullYear();
   const generatedAt = formatDateLabel(data.generatedAt, locale, timeZone);
-  const sessionsDir = shortenPath(notes.sessionsDir || "~/.codex/sessions");
+  const sessionsCount = numberFormatter.format(summary.sessions || 0);
 
   const mostActiveDay = summary.mostActiveDay;
   const mostActiveDate = mostActiveDay?.date
@@ -464,33 +477,34 @@ export function buildWrappedTemplate(data) {
     : "--";
 
   const highlightModel = models[0];
+  const topModels = models.slice(0, 3);
 
   const header = h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[3] } },
+    { style: { display: "flex", flexDirection: "column", gap: spacing[2] } },
     h(
       "div",
       { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
       h(
         "div",
-        { style: { display: "flex", flexDirection: "row", gap: spacing[4], alignItems: "center" } },
+        { style: { display: "flex", flexDirection: "row", gap: spacing[3], alignItems: "center" } },
         h(
           "div",
           {
             style: {
-              width: 48,
-              height: 48,
-              borderRadius: 16,
+              width: 36,
+              height: 36,
+              borderRadius: 10,
               backgroundColor: colors.accent.primary,
               color: "#ffffff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: typography.size.xl,
+              fontSize: typography.size.lg,
               fontWeight: typography.weight.bold,
             },
           },
-          "O"
+          "C"
         ),
         h(
           "div",
@@ -502,7 +516,7 @@ export function buildWrappedTemplate(data) {
           ),
           h(
             "span",
-            { style: { fontSize: typography.size.md, color: colors.text.muted } },
+            { style: { fontSize: typography.size.sm, color: colors.text.muted } },
             config.subtitle || "Your year in the Codex CLI"
           )
         )
@@ -512,79 +526,75 @@ export function buildWrappedTemplate(data) {
         { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 } },
         h(
           "span",
-          { style: { textTransform: "uppercase", fontSize: typography.size.sm, letterSpacing: 3, color: colors.text.faint } },
+          {
+            style: {
+              textTransform: "uppercase",
+              fontSize: typography.size.xs,
+              letterSpacing: 1.6,
+              color: colors.text.faint,
+            },
+          },
           "wrapped"
         ),
         h(
           "span",
-          { style: { fontSize: typography.size["7xl"], fontWeight: typography.weight.bold, color: colors.accent.strong, letterSpacing: 3 } },
+          { style: { fontSize: typography.size["7xl"], fontWeight: typography.weight.bold, color: colors.accent.strong, letterSpacing: 2 } },
           String(year)
         )
       )
     ),
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[2] } },
+      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[1] } },
       h(
         "div",
         {
           style: {
-            paddingTop: 6,
-            paddingBottom: 6,
-            paddingLeft: 12,
-            paddingRight: 12,
+            paddingTop: 4,
+            paddingBottom: 4,
+            paddingLeft: 10,
+            paddingRight: 10,
             borderRadius: 999,
             backgroundColor: "rgba(255, 255, 255, 0.6)",
             border: `1px solid ${colors.border}`,
-            fontSize: typography.size.sm,
-            color: colors.text.faint,
+            fontSize: typography.size.xs,
+            color: colors.text.muted,
             display: "flex",
             flexDirection: "row",
             gap: 6,
             alignItems: "center",
           },
         },
-        "Generated",
-        generatedAt
-      ),
-      h(
-        "div",
-        {
-          style: {
-            paddingTop: 6,
-            paddingBottom: 6,
-            paddingLeft: 12,
-            paddingRight: 12,
-            borderRadius: 999,
-            backgroundColor: "rgba(255, 255, 255, 0.6)",
-            border: `1px solid ${colors.border}`,
-            fontSize: typography.size.sm,
-            color: colors.text.faint,
-            display: "flex",
-            flexDirection: "row",
-            gap: 6,
-            alignItems: "center",
-          },
-        },
-        "Sessions",
-        sessionsDir
+        h(
+          "span",
+          { style: { color: colors.text.faint, textTransform: "uppercase", letterSpacing: 1.2 } },
+          "Generated"
+        ),
+        h("span", { style: { color: colors.text.primary, fontWeight: typography.weight.medium } }, generatedAt),
+        h("span", { style: { opacity: 0.5 } }, "•"),
+        h(
+          "span",
+          { style: { color: colors.text.faint, textTransform: "uppercase", letterSpacing: 1.2 } },
+          "Sessions"
+        ),
+        h("span", { style: { color: colors.text.primary, fontWeight: typography.weight.medium } }, sessionsCount)
       )
     )
   );
 
   const topStats = h(
     "div",
-    { style: { display: "flex", flexDirection: "row", gap: spacing[4] } },
+    { style: { display: "flex", flexDirection: "row", gap: spacing[2] } },
     statCard([
       labelText("Started"),
       h(
         "span",
-        { style: { fontSize: typography.size.md, color: colors.text.muted } },
+        { style: { fontSize: typography.size.sm, color: colors.text.muted } },
         formatLongDate(summary.firstSessionDate, locale, timeZone)
       ),
       h(
         "span",
-        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.medium } },
+        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.bold } },
         `${numberFormatter.format(summary.daysSinceFirstSession || 0)} days ago`
       ),
     ]),
@@ -592,18 +602,18 @@ export function buildWrappedTemplate(data) {
       labelText("Most Active Day"),
       h(
         "span",
-        { style: { fontSize: typography.size.md, color: colors.text.muted } },
+        { style: { fontSize: typography.size.sm, color: colors.text.muted } },
         mostActiveWeekday
       ),
       h(
         "span",
-        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.medium } },
+        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.bold } },
         mostActiveDate
       ),
       h(
         "span",
         { style: { fontSize: typography.size.sm, color: colors.text.muted } },
-        `${numberFormatter.format(mostActiveDay?.count || 0)} turns`
+        `${formatCompact(mostActiveDay?.count || 0)} turns`
       ),
     ]),
     statCard([
@@ -615,9 +625,13 @@ export function buildWrappedTemplate(data) {
   const heatmapPanel = panel([
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
-      h("span", { style: { fontSize: typography.size.lg, fontWeight: typography.weight.bold } }, "Activity"),
-      h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, `Jan - Dec | ${summary.maxDailyCount || 0} max/day`)
+      { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" } },
+      h("span", { style: { fontSize: typography.size.xl, fontWeight: typography.weight.bold } }, "Activity"),
+      h(
+        "span",
+        { style: { fontSize: typography.size.xs, color: colors.text.muted } },
+        `Jan - Dec | ${formatCompact(summary.maxDailyCount || 0)} max/day`
+      )
     ),
     renderHeatmap(activity, summary.maxDailyCount || 0, year),
   ]);
@@ -627,22 +641,30 @@ export function buildWrappedTemplate(data) {
     {
       style: {
         backgroundImage: "linear-gradient(145deg, rgba(16, 163, 127, 0.12), rgba(255, 255, 255, 0.8))",
-        borderRadius: 14,
-        padding: 12,
+        borderRadius: layout.radius.md,
+        padding: 10,
         border: "1px solid rgba(16, 163, 127, 0.2)",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 4,
       },
     },
     h(
       "span",
-      { style: { fontSize: typography.size.sm, textTransform: "uppercase", letterSpacing: 2, color: colors.text.faint } },
+      {
+        style: {
+          fontSize: typography.size.xs,
+          textTransform: "uppercase",
+          letterSpacing: 1.4,
+          color: colors.text.muted,
+          fontWeight: typography.weight.medium,
+        },
+      },
       config.highlight_label || "Signal"
     ),
     h(
       "span",
-      { style: { fontSize: typography.size["2xl"], fontWeight: typography.weight.medium } },
+      { style: { fontSize: typography.size["2xl"], fontWeight: typography.weight.bold } },
       highlightModel ? highlightModel.name : "No data"
     ),
     h(
@@ -657,19 +679,19 @@ export function buildWrappedTemplate(data) {
   const topModelsPanel = panel([
     sectionHeader("Top Models", "By total tokens"),
     highlightBlock,
-    renderModelList(models, shortFormatter),
-  ]);
+    renderModelList(topModels, shortFormatter),
+  ], { flex: 1 });
 
   const cachePanel = panel([
     sectionHeader("Cache Efficiency", "Prompt caching impact"),
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[3] } },
+      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[2] } },
       [
-        { label: "Cache Read", value: numberFormatter.format(summary.cachedInputTokens || 0) },
+        { label: "Cache Read", value: formatCompact(summary.cachedInputTokens || 0) },
         { label: "Cache Hit", value: `${((summary.cacheHitRate || 0) * 100).toFixed(1)}%` },
-        { label: "Input Tokens", value: numberFormatter.format(summary.inputTokens || 0) },
-        { label: "Output Tokens", value: numberFormatter.format(summary.outputTokens || 0) },
+        { label: "Input Tokens", value: formatCompact(summary.inputTokens || 0) },
+        { label: "Output Tokens", value: formatCompact(summary.outputTokens || 0) },
       ].map((metric) =>
         h(
           "div",
@@ -678,29 +700,30 @@ export function buildWrappedTemplate(data) {
               backgroundColor: colors.surfaceStrong,
               borderRadius: 12,
               border: "1px solid rgba(48, 36, 24, 0.06)",
-              padding: 12,
+              padding: 8,
               display: "flex",
               flexDirection: "column",
-              gap: 6,
-              width: 210,
+              gap: 4,
+              width: 160,
+              flexGrow: 1,
             },
           },
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, metric.label),
-          h("span", { style: { fontSize: typography.size.lg, fontWeight: typography.weight.medium } }, metric.value)
+          h("span", { style: { fontSize: typography.size.xs, color: colors.text.muted } }, metric.label),
+          h("span", { style: { fontSize: typography.size.lg, fontWeight: typography.weight.bold } }, metric.value)
         )
       )
     ),
-  ]);
+  ], { flex: 1 });
 
   const totalsPanel = panel([
     sectionHeader("Totals", "Year-wide snapshot"),
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[3] } },
+      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[2] } },
       [
         { label: "Sessions", value: numberFormatter.format(summary.sessions || 0) },
-        { label: "Turns", value: numberFormatter.format(summary.turns || 0) },
-        { label: "Total Tokens", value: numberFormatter.format(summary.totalTokens || 0) },
+        { label: "Turns", value: formatCompact(summary.turns || 0) },
+        { label: "Total Tokens", value: formatCompact(summary.totalTokens || 0) },
         { label: "Cost", value: currencyFormatter.format(summary.costUSD || 0) },
         { label: "Max Streak", value: `${summary.maxStreak || 0} days` },
         { label: "Cache Hit Rate", value: `${((summary.cacheHitRate || 0) * 100).toFixed(1)}%` },
@@ -712,23 +735,23 @@ export function buildWrappedTemplate(data) {
               backgroundColor: colors.surfaceStrong,
               borderRadius: 14,
               border: "1px solid rgba(48, 36, 24, 0.06)",
-              padding: 14,
+              padding: 8,
               display: "flex",
               flexDirection: "column",
-              gap: 6,
-              width: 210,
+              gap: 4,
+              width: 150,
             },
           },
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, stat.label),
-          h("span", { style: { fontSize: typography.size.xl, fontWeight: typography.weight.medium } }, stat.value)
+          h("span", { style: { fontSize: typography.size.xs, color: colors.text.muted } }, stat.label),
+          h("span", { style: { fontSize: typography.size["2xl"], fontWeight: typography.weight.bold } }, stat.value)
         )
       )
     ),
-  ], { padding: 22 });
+  ], { padding: 18 });
 
   const footer = h(
     "div",
-    { style: { textAlign: "center", fontSize: typography.size.sm, color: colors.text.faint } },
+    { style: { textAlign: "center", fontSize: typography.size.xs, color: colors.text.faint } },
     "@stometaverse"
   );
 
@@ -740,7 +763,7 @@ export function buildWrappedTemplate(data) {
         height: layout.canvas.height,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[4],
+        gap: spacing[3],
         paddingLeft: layout.padding.horizontal,
         paddingRight: layout.padding.horizontal,
         paddingTop: layout.padding.top,
@@ -760,7 +783,7 @@ export function buildWrappedTemplate(data) {
     heatmapPanel,
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", gap: spacing[4] } },
+      { style: { display: "flex", flexDirection: "row", gap: spacing[2] } },
       topModelsPanel,
       cachePanel
     ),
