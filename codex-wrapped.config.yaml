@@ -12,5 +12,5 @@ defaults:
 
 dashboard:
   title: "Codex"
-  subtitle: "Your year in the Codex CLI"
+  subtitle: "Year in Review"
   highlight_label: "Signal"

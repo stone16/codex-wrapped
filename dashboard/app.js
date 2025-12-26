@@ -13,340 +13,260 @@ const activity = data.activity || {};
 const models = data.models || [];
 const config = data.config || {};
 const locale = config.locale || "en-US";
-const timeZone = config.timezone && config.timezone !== "local" ? config.timezone : undefined;
 
+// Formatters
 const numberFormatter = new Intl.NumberFormat(locale);
 const shortFormatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const percentFormatter = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+
 const formatCompact = (value) => {
   const safe = Number(value || 0);
   return safe >= 1_000_000 ? shortFormatter.format(safe) : numberFormatter.format(safe);
 };
 
-const yearEl = document.getElementById("year");
-if (yearEl) yearEl.textContent = data.year ?? "--";
+const formatDate = (dateStr) => {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
+};
+
+// Helper to set text content
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value ?? "--";
+}
+
+// ─────────────────────────────────────────────────────────────
+// Header / Hero
+// ─────────────────────────────────────────────────────────────
+setText("year", data.year ?? "--");
 
 const titleEl = document.getElementById("title");
-if (titleEl) titleEl.textContent = config.title || "Codex";
+if (titleEl) {
+  const baseTitle = config.title || "Codex";
+  titleEl.textContent = /wrapped/i.test(baseTitle) ? baseTitle : `${baseTitle} Wrapped`;
+}
 
 const subtitleEl = document.getElementById("subtitle");
 if (subtitleEl) subtitleEl.textContent = config.subtitle || "Your year in the Codex CLI";
 
-const highlightLabelEl = document.getElementById("highlight-label");
-if (highlightLabelEl) highlightLabelEl.textContent = config.highlight_label || "Signal";
+setText("generated-at", formatShortDate(data.generatedAt));
+setText("sessions-count", numberFormatter.format(summary.sessions || 0));
 
-const generatedAtEl = document.getElementById("generated-at");
-if (generatedAtEl && data.generatedAt) {
-  const generatedDate = new Date(data.generatedAt);
-  generatedAtEl.textContent = generatedDate.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone });
+// ─────────────────────────────────────────────────────────────
+// Top Stats Row
+// ─────────────────────────────────────────────────────────────
+setText("first-run", formatShortDate(summary.firstSessionDate));
+setText("days-since", `${summary.daysSinceFirstSession ?? 0} days ago`);
+
+const mostActive = summary.mostActiveDay || {};
+setText("most-active-day", mostActive.formattedDate || formatShortDate(mostActive.date));
+if (mostActive.date) {
+  const dayOfWeek = new Date(mostActive.date).toLocaleDateString(locale, { weekday: "long" });
+  setText("most-active-weekday", dayOfWeek);
 }
+setText("most-active-count", `${formatCompact(mostActive.count || 0)} turns`);
 
-const sessionsCountEl = document.getElementById("sessions-count");
-if (sessionsCountEl) {
-  sessionsCountEl.textContent = numberFormatter.format(summary.sessions || 0);
-}
+// ─────────────────────────────────────────────────────────────
+// Weekday Chart
+// ─────────────────────────────────────────────────────────────
+const weekdayCounts = activity.weekdayCounts || [];
+const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const maxWeekday = Math.max(...weekdayCounts, 1);
+const peakDayIndex = weekdayCounts.indexOf(Math.max(...weekdayCounts));
 
-const firstRunEl = document.getElementById("first-run");
-const daysSinceEl = document.getElementById("days-since");
-if (summary.firstSessionDate && firstRunEl && daysSinceEl) {
-  const firstDate = new Date(summary.firstSessionDate);
-  firstRunEl.textContent = firstDate.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric", timeZone });
-  daysSinceEl.textContent = `${numberFormatter.format(summary.daysSinceFirstSession || 0)} days ago`;
-}
+const chartEl = document.getElementById("weekday-chart");
+const labelsEl = document.getElementById("weekday-labels");
 
-const mostActiveDayEl = document.getElementById("most-active-day");
-const mostActiveCountEl = document.getElementById("most-active-count");
-const mostActiveWeekdayEl = document.getElementById("most-active-weekday");
-if (mostActiveDayEl && mostActiveCountEl && mostActiveWeekdayEl) {
-  if (summary.mostActiveDay) {
-    const dateValue = summary.mostActiveDay.date;
-    if (dateValue) {
-      mostActiveDayEl.textContent = formatShortDate(dateValue, locale, timeZone);
-      const weekdayDate = new Date(`${dateValue}T00:00:00`);
-      mostActiveWeekdayEl.textContent = Number.isNaN(weekdayDate.getTime())
-        ? "--"
-        : weekdayDate.toLocaleDateString(locale, { weekday: "long", timeZone });
-    } else {
-      mostActiveDayEl.textContent = summary.mostActiveDay.formattedDate || "--";
-      mostActiveWeekdayEl.textContent = "--";
-    }
-    mostActiveCountEl.textContent = `${formatCompact(summary.mostActiveDay.count || 0)} turns`;
-  } else {
-    mostActiveDayEl.textContent = "--";
-    mostActiveWeekdayEl.textContent = "--";
-    mostActiveCountEl.textContent = "No activity";
-  }
-}
+if (chartEl && labelsEl) {
+  weekdayCounts.forEach((count, i) => {
+    const height = Math.max(6, (count / maxWeekday) * 100);
+    const bar = document.createElement("div");
+    bar.className = "weekday-bar" + (i === peakDayIndex ? " highlight" : "");
+    bar.style.height = `${height}%`;
+    chartEl.appendChild(bar);
 
-const highlightValueEl = document.getElementById("highlight-value");
-const highlightSubEl = document.getElementById("highlight-sub");
-if (highlightValueEl && highlightSubEl) {
-  if (models.length > 0) {
-    const topModel = models[0];
-    highlightValueEl.textContent = topModel.name;
-    highlightSubEl.textContent = `${shortFormatter.format(topModel.tokens)} tokens | ${currencyFormatter.format(topModel.costUSD || 0)}`;
-  } else {
-    highlightValueEl.textContent = "No data";
-    highlightSubEl.textContent = "Run the data build";
-  }
-}
-
-setStat("stat-sessions", summary.sessions, numberFormatter);
-setStat("stat-turns", summary.turns, formatCompact);
-setStat("stat-total-tokens", summary.totalTokens, formatCompact);
-
-const cacheReadEl = document.getElementById("cache-read");
-if (cacheReadEl) {
-  cacheReadEl.textContent = formatCompact(summary.cachedInputTokens || 0);
-}
-
-const cacheInputEl = document.getElementById("cache-input");
-if (cacheInputEl) {
-  cacheInputEl.textContent = formatCompact(summary.inputTokens || 0);
-}
-
-const cacheOutputEl = document.getElementById("cache-output");
-if (cacheOutputEl) {
-  cacheOutputEl.textContent = formatCompact(summary.outputTokens || 0);
-}
-
-const cacheHitEl = document.getElementById("cache-hit");
-if (cacheHitEl) {
-  const percent = summary.cacheHitRate ? summary.cacheHitRate * 100 : 0;
-  cacheHitEl.textContent = `${percent.toFixed(1)}%`;
-}
-
-const cacheRateEl = document.getElementById("stat-cache-rate");
-if (cacheRateEl) {
-  const percent = summary.cacheHitRate ? summary.cacheHitRate * 100 : 0;
-  cacheRateEl.textContent = `${percent.toFixed(1)}%`;
-}
-
-const costEl = document.getElementById("stat-cost");
-if (costEl) {
-  costEl.textContent = currencyFormatter.format(summary.costUSD || 0);
-}
-
-const streakEl = document.getElementById("stat-streak");
-if (streakEl) {
-  streakEl.textContent = `${summary.maxStreak || 0} days`;
-}
-
-renderHeatmap(activity, summary.maxDailyCount || 0, data.year);
-renderWeekdayChart(activity.weekdayCounts || []);
-renderList("top-models", models.slice(0, 3), "tokens");
-
-function setStat(id, value, formatter) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const safeValue = value ?? 0;
-  el.textContent = formatter.format(safeValue);
-}
-
-function formatShortDate(dateStr, localeValue, timeZoneValue) {
-  const date = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return dateStr;
-  return date.toLocaleDateString(localeValue, { month: "short", day: "numeric", timeZone: timeZoneValue });
-}
-
-function renderHeatmap(activityData, maxCount, year) {
-  const heatmap = document.getElementById("heatmap");
-  const monthsRow = document.getElementById("heatmap-months");
-  const legend = document.getElementById("heatmap-legend");
-  if (!heatmap || !monthsRow) return;
-
-  const dailyCounts = activityData.dailyCounts || {};
-  const maxStreakDays = new Set(activityData.maxStreakDays || []);
-  const selectedYear = year || new Date().getFullYear();
-  const weeks = generateWeeksForYear(selectedYear);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const weekIndexByDate = new Map();
-  weeks.forEach((week, index) => {
-    week.forEach((dateKey) => {
-      if (dateKey) {
-        weekIndexByDate.set(dateKey, index);
-      }
-    });
-  });
-
-  const monthStarts = months
-    .map((_, monthIndex) => {
-      const dateKey = `${selectedYear}-${String(monthIndex + 1).padStart(2, "0")}-01`;
-      return { monthIndex, start: weekIndexByDate.get(dateKey) };
-    })
-    .filter((entry) => entry.start != null)
-    .sort((a, b) => a.start - b.start);
-
-  const monthSpans = monthStarts.map((entry, index) => ({
-    ...entry,
-    span: (monthStarts[index + 1]?.start ?? weeks.length) - entry.start,
-  }));
-
-  monthsRow.innerHTML = "";
-  monthsRow.style.gridTemplateColumns = `repeat(${weeks.length}, var(--heat-size))`;
-  monthsRow.style.columnGap = "var(--heat-gap)";
-
-  monthSpans.forEach((entry) => {
     const label = document.createElement("span");
-    label.className = "heatmap-month";
-    label.textContent = months[entry.monthIndex] || "--";
-    label.style.gridColumn = `${entry.start + 1} / span ${entry.span}`;
-    monthsRow.appendChild(label);
+    label.className = "weekday-label" + (i === peakDayIndex ? " highlight" : "");
+    label.textContent = weekdayLabels[i];
+    labelsEl.appendChild(label);
   });
+}
 
-  heatmap.innerHTML = "";
+// ─────────────────────────────────────────────────────────────
+// Heatmap (GitHub-style horizontal layout, full width)
+// ─────────────────────────────────────────────────────────────
+const dailyCounts = activity.dailyCounts || {};
+const streakDays = new Set(activity.maxStreakDays || []);
+const year = data.year || new Date().getFullYear();
+
+const startDate = new Date(year, 0, 1);
+const endDate = new Date(year, 11, 31);
+
+const heatmapEl = document.getElementById("heatmap");
+const monthsEl = document.getElementById("heatmap-months");
+const legendEl = document.getElementById("heatmap-legend");
+
+if (heatmapEl) {
+  const maxCount = Math.max(...Object.values(dailyCounts), 1);
+  const getLevel = (count) => {
+    if (!count) return 0;
+    const ratio = count / maxCount;
+    if (ratio > 0.8) return 5;
+    if (ratio > 0.6) return 4;
+    if (ratio > 0.4) return 3;
+    if (ratio > 0.2) return 2;
+    return 1;
+  };
+
+  // Align to Sunday start
+  const current = new Date(startDate);
+  current.setDate(current.getDate() - current.getDay());
+
+  const weeks = [];
+  const monthPositions = [];
+  let lastMonth = -1;
+
+  while (current <= endDate || current.getDay() !== 0) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const dateStr = current.toISOString().slice(0, 10);
+      const inRange = current >= startDate && current <= endDate;
+      
+      if (inRange && current.getDate() === 1) {
+        monthPositions.push({ month: current.getMonth(), weekIndex: weeks.length });
+        lastMonth = current.getMonth();
+      }
+      
+      week.push({
+        date: dateStr,
+        count: dailyCounts[dateStr] || 0,
+        inRange,
+        isStreak: streakDays.has(dateStr),
+      });
+      current.setDate(current.getDate() + 1);
+    }
+    weeks.push(week);
+    if (current > endDate && current.getDay() === 0) break;
+  }
+
+  // Calculate cell size to fill container width
+  const containerWidth = heatmapEl.parentElement?.offsetWidth || 800;
+  const cellGap = 2;
+  const totalWeeks = weeks.length;
+  const cellSize = Math.floor((containerWidth - (totalWeeks - 1) * cellGap) / totalWeeks);
+  
+  // Set CSS variables for the entire heatmap panel
+  const heatmapPanel = heatmapEl.closest('.heatmap-panel');
+  if (heatmapPanel) {
+    heatmapPanel.style.setProperty('--cell-size', `${cellSize}px`);
+    heatmapPanel.style.setProperty('--cell-gap', `${cellGap}px`);
+  }
+
+  // Render month labels with proper spacing
+  if (monthsEl) {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const weekWidth = cellSize + cellGap;
+    
+    monthPositions.forEach((pos, i) => {
+      const nextPos = monthPositions[i + 1]?.weekIndex ?? weeks.length;
+      const span = nextPos - pos.weekIndex;
+      const label = document.createElement("span");
+      label.className = "heatmap-month";
+      label.textContent = monthNames[pos.month];
+      label.style.width = `${span * weekWidth}px`;
+      monthsEl.appendChild(label);
+    });
+  }
+
+  // Render weeks
   weeks.forEach((week) => {
     const weekEl = document.createElement("div");
     weekEl.className = "heatmap-week";
-
-    week.forEach((dateKey) => {
+    week.forEach((day) => {
       const cell = document.createElement("div");
-      cell.className = "heatmap-cell";
-      if (!dateKey) {
-        cell.style.visibility = "hidden";
+      if (!day.inRange) {
+        cell.className = "heatmap-cell outside";
       } else {
-        const count = dailyCounts[dateKey] || 0;
-        const level = getIntensityLevel(count, maxCount);
-        cell.classList.add(`level-${level}`);
-        if (maxStreakDays.has(dateKey)) {
-          cell.classList.add("streak");
-        }
-        cell.title = `${dateKey}: ${count} turns`;
+        const level = getLevel(day.count);
+        cell.className = `heatmap-cell level-${level}` + (day.isStreak ? " streak" : "");
+        cell.title = `${day.date}: ${formatCompact(day.count)} turns`;
       }
       weekEl.appendChild(cell);
     });
-
-    heatmap.appendChild(weekEl);
+    heatmapEl.appendChild(weekEl);
   });
 
-  if (legend) {
-    legend.textContent = `Jan - Dec | ${formatCompact(maxCount)} max/day`;
+  // Legend text
+  if (legendEl) {
+    const totalDays = Object.keys(dailyCounts).length;
+    legendEl.textContent = `${totalDays} active days`;
   }
 }
 
-function getIntensityLevel(count, maxCount) {
-  if (count === 0 || maxCount === 0) return 0;
-  const ratio = count / maxCount;
-  if (ratio <= 0.1) return 1;
-  if (ratio <= 0.25) return 2;
-  if (ratio <= 0.4) return 3;
-  if (ratio <= 0.6) return 4;
-  if (ratio <= 0.8) return 5;
-  return 6;
-}
+// ─────────────────────────────────────────────────────────────
+// Top Models (show only top 3)
+// ─────────────────────────────────────────────────────────────
+const topModelsEl = document.getElementById("top-models");
+const highlightLabelEl = document.getElementById("highlight-label");
+const highlightValueEl = document.getElementById("highlight-value");
+const highlightSubEl = document.getElementById("highlight-sub");
 
-function generateWeeksForYear(year) {
-  const weeks = [];
-  const startDate = new Date(year, 0, 1);
-  const endDate = new Date(year, 11, 31);
-
-  const startDay = startDate.getDay();
-  const adjustedStart = new Date(startDate);
-  if (startDay !== 0) {
-    adjustedStart.setDate(startDate.getDate() - startDay);
+if (models.length > 0) {
+  const topModel = models[0];
+  if (highlightLabelEl) highlightLabelEl.textContent = "#1";
+  if (highlightValueEl) highlightValueEl.textContent = topModel.name;
+  if (highlightSubEl) {
+    const pct = (topModel.percentage * 100).toFixed(1);
+    highlightSubEl.textContent = `${pct}% of tokens · ${currencyFormatter.format(topModel.costUSD || 0)}`;
   }
 
-  let currentDate = new Date(adjustedStart);
-  let currentWeek = [];
+  if (topModelsEl) {
+    // Only show #2 and #3 (slice 1-3)
+    models.slice(1, 3).forEach((model, i) => {
+      const row = document.createElement("div");
+      row.className = "list-row";
+      row.innerHTML = `
+        <span class="list-rank">#${i + 2}</span>
+        <div class="list-main">
+          <span class="list-name">${model.name}</span>
+          <span class="list-sub">${(model.percentage * 100).toFixed(1)}% of tokens</span>
+        </div>
+        <span class="list-metric">${currencyFormatter.format(model.costUSD || 0)}</span>
+      `;
+      topModelsEl.appendChild(row);
+    });
 
-  while (currentDate <= endDate || currentWeek.length > 0) {
-    const dayOfWeek = currentDate.getDay();
-    const dateStr = formatDateKey(currentDate);
-
-    if (currentDate.getFullYear() === year) {
-      currentWeek.push(dateStr);
-    } else {
-      currentWeek.push("");
+    if (models.length <= 1) {
+      topModelsEl.innerHTML = '<div class="empty-state">Only one model used</div>';
     }
-
-    if (dayOfWeek === 6) {
-      if (currentWeek.some((d) => d !== "")) {
-        weeks.push(currentWeek);
-      }
-      currentWeek = [];
-    }
-
-    currentDate.setDate(currentDate.getDate() + 1);
-    if (currentDate.getFullYear() > year + 1) break;
   }
-
-  if (currentWeek.length && currentWeek.some((d) => d !== "")) {
-    weeks.push(currentWeek);
-  }
-
-  return weeks;
+} else {
+  if (highlightValueEl) highlightValueEl.textContent = "No data";
+  if (topModelsEl) topModelsEl.innerHTML = '<div class="empty-state">No model data available</div>';
 }
 
-function formatDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+// ─────────────────────────────────────────────────────────────
+// Cache Efficiency
+// ─────────────────────────────────────────────────────────────
+setText("cache-read", formatCompact(summary.cachedInputTokens || 0));
+setText("cache-hit", percentFormatter.format(summary.cacheHitRate || 0));
+setText("cache-input", formatCompact(summary.inputTokens || 0));
+setText("cache-output", formatCompact(summary.outputTokens || 0));
 
-function renderWeekdayChart(counts) {
-  const chart = document.getElementById("weekday-chart");
-  const labels = document.getElementById("weekday-labels");
-  if (!chart || !labels) return;
-
-  const max = Math.max(...counts, 1);
-  const maxHeight = 72;
-  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const maxIndex = counts.findIndex((value) => value === max);
-
-  chart.innerHTML = "";
-  labels.innerHTML = "";
-
-  counts.forEach((count, index) => {
-    const bar = document.createElement("div");
-    bar.className = "weekday-bar";
-    if (index === maxIndex) bar.classList.add("highlight");
-    const height = Math.max(10, Math.round((count / max) * maxHeight));
-    bar.style.height = `${height}px`;
-    bar.title = `${names[index]}: ${count} turns`;
-    chart.appendChild(bar);
-
-    const label = document.createElement("span");
-    label.className = "weekday-label";
-    if (index === maxIndex) label.classList.add("highlight");
-    label.textContent = names[index];
-    labels.appendChild(label);
-  });
-}
-
-function renderList(containerId, items, metricKey) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  if (!items.length) {
-    container.innerHTML = "<div class=\"empty-state\">No data yet.</div>";
-    return;
-  }
-
-  container.innerHTML = "";
-  items.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "list-row";
-
-    const rank = document.createElement("div");
-    rank.className = "list-rank";
-    rank.textContent = String(index + 1).padStart(2, "0");
-
-    const main = document.createElement("div");
-    main.className = "list-main";
-    const name = document.createElement("span");
-    name.className = "list-name";
-    name.textContent = item.name;
-    main.appendChild(name);
-
-    const metric = document.createElement("div");
-    metric.className = "list-metric";
-    const metricValue = item[metricKey] ?? item.tokens ?? 0;
-    metric.textContent = shortFormatter.format(metricValue);
-
-    row.appendChild(rank);
-    row.appendChild(main);
-    row.appendChild(metric);
-    container.appendChild(row);
-  });
-}
+// ─────────────────────────────────────────────────────────────
+// Totals Section
+// ─────────────────────────────────────────────────────────────
+setText("stat-sessions", numberFormatter.format(summary.sessions || 0));
+setText("stat-turns", formatCompact(summary.turns || 0));
+setText("stat-total-tokens", formatCompact(summary.totalTokens || 0));
+setText("stat-cost", currencyFormatter.format(summary.costUSD || 0));
+setText("stat-streak", `${summary.maxStreak || 0} days`);
+setText("stat-cache-rate", percentFormatter.format(summary.cacheHitRate || 0));
