@@ -21,7 +21,16 @@ const MIME_TYPES = {
 function createServer(dashboardDir, data) {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
-    let filePath = path.join(dashboardDir, url.pathname === "/" ? "index.html" : url.pathname);
+    const requestPath = url.pathname === "/" ? "index.html" : url.pathname;
+    const relativePath = path.normalize(requestPath).replace(/^([/\\])+/, "");
+    const dashboardRoot = path.resolve(dashboardDir);
+    const filePath = path.resolve(dashboardRoot, relativePath);
+
+    if (filePath !== dashboardRoot && !filePath.startsWith(`${dashboardRoot}${path.sep}`)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
 
     // Intercept data.json to serve our test data
     if (url.pathname === "/data.json") {

@@ -229,28 +229,57 @@ if (models.length > 0) {
   }
 
   if (topModelsEl) {
-    // Only show #2 and #3 (slice 1-3)
-    models.slice(1, 3).forEach((model, i) => {
-      const row = document.createElement("div");
-      row.className = "list-row";
-      row.innerHTML = `
-        <span class="list-rank">#${i + 2}</span>
-        <div class="list-main">
-          <span class="list-name">${model.name}</span>
-          <span class="list-sub">${(model.percentage * 100).toFixed(1)}% of tokens</span>
-        </div>
-        <span class="list-metric">${currencyFormatter.format(model.costUSD || 0)}</span>
-      `;
-      topModelsEl.appendChild(row);
-    });
+    topModelsEl.textContent = "";
 
+    // Only show #2 and #3 (slice 1-3)
     if (models.length <= 1) {
-      topModelsEl.innerHTML = '<div class="empty-state">Only one model used</div>';
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "Only one model used";
+      topModelsEl.appendChild(empty);
+    } else {
+      models.slice(1, 3).forEach((model, i) => {
+        const row = document.createElement("div");
+        row.className = "list-row";
+
+        const rank = document.createElement("span");
+        rank.className = "list-rank";
+        rank.textContent = `#${i + 2}`;
+
+        const main = document.createElement("div");
+        main.className = "list-main";
+
+        const name = document.createElement("span");
+        name.className = "list-name";
+        name.textContent = String(model.name);
+
+        const sub = document.createElement("span");
+        sub.className = "list-sub";
+        sub.textContent = `${(model.percentage * 100).toFixed(1)}% of tokens`;
+
+        main.appendChild(name);
+        main.appendChild(sub);
+
+        const metric = document.createElement("span");
+        metric.className = "list-metric";
+        metric.textContent = currencyFormatter.format(model.costUSD || 0);
+
+        row.appendChild(rank);
+        row.appendChild(main);
+        row.appendChild(metric);
+        topModelsEl.appendChild(row);
+      });
     }
   }
 } else {
   if (highlightValueEl) highlightValueEl.textContent = "No data";
-  if (topModelsEl) topModelsEl.innerHTML = '<div class="empty-state">No model data available</div>';
+  if (topModelsEl) {
+    topModelsEl.textContent = "";
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "No model data available";
+    topModelsEl.appendChild(empty);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
