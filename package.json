@@ -42,10 +42,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stometa/codex-wrapped.git"
+    "url": "git+https://github.com/stone16/codex-usage-wrapped.git"
   },
   "bugs": {
-    "url": "https://github.com/stometa/codex-wrapped/issues"
+    "url": "https://github.com/stone16/codex-usage-wrapped/issues"
   },
-  "homepage": "https://github.com/stometa/codex-wrapped#readme"
+  "homepage": "https://github.com/stone16/codex-usage-wrapped#readme"
 }
