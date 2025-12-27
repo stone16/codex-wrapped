@@ -55,7 +55,7 @@
 html {
   /* Fixed dimensions for image export */
   --card-width: 900px;
-  --card-height: 720px;
+  --card-height: 896px;
 }
 
 body {
@@ -127,6 +127,14 @@ body {
     linear-gradient(160deg, var(--bg), var(--bg-2));
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(35, 31, 25, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Fixed height mode for image export */
+.wrap.export-mode {
+  height: var(--card-height);
+  min-height: var(--card-height);
+  max-height: var(--card-height);
+  overflow: hidden;
 }
 
 .hero {

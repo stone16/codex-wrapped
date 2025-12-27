@@ -53,17 +53,24 @@ export const spacing = [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64];
 
 export const layout = {
   canvas: {
+    // Match the HTML viewport size for comparison
     width: 1200,
-    height: 1080,
+    height: 944, // 896 (content) + 24*2 (padding)
+  },
+  card: {
+    width: 900,
+    height: 896,
   },
   padding: {
-    horizontal: 24,
-    top: 24,
-    bottom: 28,
+    horizontal: 20,
+    top: 20,
+    bottom: 20,
   },
   radius: {
     md: 10,
     lg: 12,
+    card: 16,
   },
   shadow: "0 10px 26px rgba(35, 31, 25, 0.09)",
+  cardShadow: "0 20px 60px rgba(35, 31, 25, 0.15)",
 };
