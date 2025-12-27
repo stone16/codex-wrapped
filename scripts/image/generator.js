@@ -6,6 +6,8 @@ import { layout } from "./design-tokens.js";
 
 export async function generateImage(data) {
   const fonts = await loadFonts();
+  const scale = layout.scale || 2;
+  
   const svg = await satori(buildWrappedTemplate(data), {
     width: layout.canvas.width,
     height: layout.canvas.height,
@@ -14,7 +16,8 @@ export async function generateImage(data) {
 
   const resvg = new Resvg(svg, {
     fitTo: {
-      mode: "original",
+      mode: "width",
+      value: layout.canvas.width * scale,
     },
     font: {
       fontFiles: getFontPaths(),

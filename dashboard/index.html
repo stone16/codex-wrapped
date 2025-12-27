@@ -18,7 +18,7 @@
       <header class="hero" data-reveal style="--delay: 0ms">
         <div class="brand">
           <div class="logo">
-            <span class="logo-mark">O</span>
+            <span class="logo-mark">C</span>
           </div>
           <div class="brand-text">
             <span class="brand-title" id="title">Codex</span>
@@ -30,8 +30,13 @@
           <span class="wrapped-year" id="year">--</span>
         </div>
         <div class="hero-meta">
-          <span class="pill">Generated <span id="generated-at">--</span></span>
-          <span class="pill">Sessions <span id="sessions-dir">--</span></span>
+          <span class="pill">
+            <span class="pill-label">Generated</span>
+            <span class="pill-value" id="generated-at">--</span>
+            <span class="pill-sep">•</span>
+            <span class="pill-label">Sessions</span>
+            <span class="pill-value" id="sessions-count">--</span>
+          </span>
         </div>
       </header>
 
@@ -39,12 +44,12 @@
         <div class="stat-card">
           <span class="label">Started</span>
           <span class="sub" id="first-run">--</span>
-          <span class="value" id="days-since">--</span>
+          <span class="value value-xl" id="days-since">--</span>
         </div>
         <div class="stat-card">
           <span class="label">Most Active Day</span>
           <span class="sub" id="most-active-weekday">--</span>
-          <span class="value" id="most-active-day">--</span>
+          <span class="value value-xl" id="most-active-day">--</span>
           <span class="meta" id="most-active-count">--</span>
         </div>
         <div class="stat-card">
@@ -59,9 +64,20 @@
           <h2>Activity</h2>
           <div class="legend" id="heatmap-legend"></div>
         </div>
-        <div class="heatmap-scroll">
-          <div class="heatmap-months" id="heatmap-months"></div>
-          <div class="heatmap" id="heatmap"></div>
+        <div class="heatmap-container">
+          <div class="heatmap-weekday-labels">
+            <span></span>
+            <span>Mon</span>
+            <span></span>
+            <span>Wed</span>
+            <span></span>
+            <span>Fri</span>
+            <span></span>
+          </div>
+          <div class="heatmap-scroll">
+            <div class="heatmap-months" id="heatmap-months"></div>
+            <div class="heatmap" id="heatmap"></div>
+          </div>
         </div>
         <div class="heatmap-foot">
           <span>Less</span>
@@ -85,7 +101,7 @@
           </div>
           <div class="highlight">
             <span class="label" id="highlight-label">Signal</span>
-            <span class="value" id="highlight-value">--</span>
+            <span class="value value-lg" id="highlight-value">--</span>
             <span class="sub" id="highlight-sub">--</span>
           </div>
           <div class="list" id="top-models"></div>
@@ -98,19 +114,19 @@
           <div class="metric-grid">
             <div class="metric">
               <span class="label">Cache Read</span>
-              <span class="value" id="cache-read">--</span>
+              <span class="value value-sm" id="cache-read">--</span>
             </div>
             <div class="metric">
               <span class="label">Cache Hit</span>
-              <span class="value" id="cache-hit">--</span>
+              <span class="value value-sm" id="cache-hit">--</span>
             </div>
             <div class="metric">
               <span class="label">Input Tokens</span>
-              <span class="value" id="cache-input">--</span>
+              <span class="value value-sm" id="cache-input">--</span>
             </div>
             <div class="metric">
               <span class="label">Output Tokens</span>
-              <span class="value" id="cache-output">--</span>
+              <span class="value value-sm" id="cache-output">--</span>
             </div>
           </div>
         </div>
@@ -124,33 +140,33 @@
         <div class="stat-grid">
           <div class="stat-box">
             <span class="label">Sessions</span>
-            <span class="value" id="stat-sessions">--</span>
+            <span class="value value-lg" id="stat-sessions">--</span>
           </div>
           <div class="stat-box">
             <span class="label">Turns</span>
-            <span class="value" id="stat-turns">--</span>
+            <span class="value value-lg" id="stat-turns">--</span>
           </div>
           <div class="stat-box">
             <span class="label">Total Tokens</span>
-            <span class="value" id="stat-total-tokens">--</span>
+            <span class="value value-lg" id="stat-total-tokens">--</span>
           </div>
           <div class="stat-box">
             <span class="label">Cost</span>
-            <span class="value" id="stat-cost">--</span>
+            <span class="value value-lg" id="stat-cost">--</span>
           </div>
           <div class="stat-box">
             <span class="label">Max Streak</span>
-            <span class="value" id="stat-streak">--</span>
+            <span class="value value-lg" id="stat-streak">--</span>
           </div>
           <div class="stat-box">
             <span class="label">Cache Hit Rate</span>
-            <span class="value" id="stat-cache-rate">--</span>
+            <span class="value value-lg" id="stat-cache-rate">--</span>
           </div>
         </div>
       </section>
 
       <footer class="footer" data-reveal style="--delay: 320ms">
-        <span>openai.com/codex</span>
+        <span>@stometaverse</span>
       </footer>
     </main>
 

@@ -3,11 +3,11 @@ export const colors = {
   backgroundAlt: "#efe5d6",
   surface: "rgba(255, 250, 244, 0.88)",
   surfaceStrong: "#fff9f0",
-  border: "rgba(48, 36, 24, 0.08)",
+  border: "rgba(48, 36, 24, 0.1)",
   text: {
     primary: "#231f19",
-    muted: "#6b655d",
-    faint: "#91897d",
+    muted: "#514a43",
+    faint: "#6a6259",
   },
   accent: {
     primary: "#10a37f",
@@ -30,17 +30,17 @@ export const colors = {
 export const typography = {
   fontFamily: '"IBM Plex Mono"',
   size: {
-    xs: 10,
+    xs: 9,
     sm: 11,
     md: 12,
     lg: 14,
     xl: 16,
     "2xl": 18,
-    "3xl": 22,
-    "4xl": 28,
-    "5xl": 36,
-    "6xl": 48,
-    "7xl": 56,
+    "3xl": 20,
+    "4xl": 24,
+    "5xl": 28,
+    "6xl": 34,
+    "7xl": 42,
   },
   weight: {
     regular: 400,
@@ -52,18 +52,32 @@ export const typography = {
 export const spacing = [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64];
 
 export const layout = {
+  // Card-only output (no outer canvas)
   canvas: {
+    width: 900,
+    height: 920,  // Full content height with footer padding
+  },
+  // For HTML comparison (includes outer padding)
+  htmlViewport: {
     width: 1200,
-    height: 1700,
+    height: 968,
+  },
+  card: {
+    width: 900,
+    height: 920,
   },
   padding: {
-    horizontal: 48,
-    top: 56,
-    bottom: 64,
+    horizontal: 20,
+    top: 20,
+    bottom: 24,  // Extra padding below footer
   },
   radius: {
-    md: 14,
-    lg: 20,
+    md: 10,
+    lg: 12,
+    card: 16,
   },
-  shadow: "0 20px 50px rgba(35, 31, 25, 0.08)",
+  // 2x scale for high-resolution output
+  scale: 2,
+  shadow: "0 10px 26px rgba(35, 31, 25, 0.09)",
+  cardShadow: "0 20px 60px rgba(35, 31, 25, 0.15)",
 };

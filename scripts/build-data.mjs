@@ -4,7 +4,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
-const DEFAULT_CONFIG_PATH = path.resolve("codex-wrapped.config.yaml");
+const DEFAULT_CONFIG_PATH = process.env.CODEX_WRAPPED_CONFIG
+  ? path.resolve(process.env.CODEX_WRAPPED_CONFIG)
+  : path.resolve("codex-wrapped.config.yaml");
 
 const DEFAULT_CONFIG = {
   defaults: {
@@ -822,7 +824,9 @@ async function main() {
     },
   };
 
-  const outputPath = path.resolve(config.defaults.output);
+  const outputPath = process.env.CODEX_WRAPPED_OUTPUT
+    ? path.resolve(process.env.CODEX_WRAPPED_OUTPUT)
+    : path.resolve(config.defaults.output);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, JSON.stringify(output, null, 2), "utf8");
 

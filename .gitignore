@@ -1,2 +1,18 @@
-tmp/opencode-wrapped/
-tmp/ccusage/
+# Dependencies
+node_modules/
+
+# Build artifacts
+*.tgz
+codex-wrapped.png
+
+# Test output
+test-output/
+
+# OS files
+.DS_Store
+
+# Temporary / reference files
+tmp/
+
+# OpenSpec (managed separately)
+openspec/

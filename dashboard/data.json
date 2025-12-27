@@ -1,6 +1,6 @@
 {
   "year": 2025,
-  "generatedAt": "2025-12-26T14:59:45.590Z",
+  "generatedAt": "2025-12-26T15:12:06.660Z",
   "config": {
     "title": "Codex",
     "subtitle": "Your year in the Codex CLI",
@@ -9,15 +9,15 @@
     "timezone": "local"
   },
   "summary": {
-    "sessions": 316,
-    "turns": 47696,
-    "inputTokens": 3742799870,
-    "cachedInputTokens": 3553390976,
-    "outputTokens": 21173150,
-    "reasoningTokens": 13740423,
-    "totalTokens": 3763973020,
-    "costUSD": 1023.1968509000076,
-    "cacheHitRate": 0.9493937959338445,
+    "sessions": 317,
+    "turns": 47780,
+    "inputTokens": 3746580207,
+    "cachedInputTokens": 3556867328,
+    "outputTokens": 21242104,
+    "reasoningTokens": 13801863,
+    "totalTokens": 3767822311,
+    "costUSD": 1024.7009161500077,
+    "cacheHitRate": 0.9493637214424114,
     "firstSessionDate": "2025-09-18T14:20:14.647Z",
     "daysSinceFirstSession": 99,
     "maxStreak": 11,
@@ -64,7 +64,7 @@
       "2025-12-23": 3267,
       "2025-12-24": 2601,
       "2025-12-25": 8219,
-      "2025-12-26": 10227
+      "2025-12-26": 10311
     },
     "dailyTokens": {
       "2025-09-18": 1894869,
@@ -100,7 +100,7 @@
       "2025-12-23": 300251701,
       "2025-12-24": 255156888,
       "2025-12-25": 784337354,
-      "2025-12-26": 991550495
+      "2025-12-26": 995399786
     },
     "dailyCosts": {
       "2025-09-18": 0.6894819999999999,
@@ -136,7 +136,7 @@
       "2025-12-23": 62.39409740000005,
       "2025-12-24": 60.440684150000024,
       "2025-12-25": 209.05696725000064,
-      "2025-12-26": 223.24527825
+      "2025-12-26": 224.74934350000007
     },
     "weekdayCounts": [
       2829,
@@ -144,7 +144,7 @@
       5017,
       4217,
       8983,
-      11741,
+      11825,
       1779
     ],
     "maxStreakDays": [
@@ -164,13 +164,13 @@
   "models": [
     {
       "name": "gpt-5.2-codex",
-      "tokens": 2419006406,
-      "inputTokens": 2408720539,
-      "outputTokens": 10285867,
-      "costUSD": 526.1589757500009,
-      "count": 27312,
+      "tokens": 2422855697,
+      "inputTokens": 2412500876,
+      "outputTokens": 10354821,
+      "costUSD": 527.6630410000006,
+      "count": 27396,
       "isFallback": false,
-      "percentage": 0.6426736836705593
+      "percentage": 0.643038736175688
     },
     {
       "name": "gpt-5.2",
@@ -180,7 +180,7 @@
       "costUSD": 456.8562649000033,
       "count": 17590,
       "isFallback": false,
-      "percentage": 0.3216872736776418
+      "percentage": 0.32135863081044325
     },
     {
       "name": "gpt-5",
@@ -190,7 +190,7 @@
       "costUSD": 29.695751999999963,
       "count": 1996,
       "isFallback": false,
-      "percentage": 0.026034215303700557
+      "percentage": 0.026007618170824087
     },
     {
       "name": "gpt-5.1-codex",
@@ -200,7 +200,7 @@
       "costUSD": 4.2353380000000005,
       "count": 351,
       "isFallback": false,
-      "percentage": 0.005082089031552091
+      "percentage": 0.005076897056465251
     },
     {
       "name": "gpt-5.1-codex-max",
@@ -210,7 +210,7 @@
       "costUSD": 6.250520249999994,
       "count": 447,
       "isFallback": false,
-      "percentage": 0.004522738316546169
+      "percentage": 0.004518117786579453
     }
   ],
   "notes": {

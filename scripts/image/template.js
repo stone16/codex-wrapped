@@ -1,9 +1,6 @@
 import { colors, layout, spacing, typography } from "./design-tokens.js";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const HEAT_CELL = 10;
-const HEAT_GAP = 4;
-const WEEKDAY_BAR_HEIGHT = 72;
 
 function h(type, props, ...children) {
   const flatChildren = children.flat().filter((child) => child !== null && child !== undefined && child !== false);
@@ -27,22 +24,10 @@ function h(type, props, ...children) {
 
 function formatShortDate(dateStr, locale, timeZone) {
   if (!dateStr) return "--";
-  const date = new Date(`${dateStr}T00:00:00`);
+  // Handle both YYYY-MM-DD and ISO date strings
+  const date = dateStr.includes("T") ? new Date(dateStr) : new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone });
-}
-
-function shortenPath(value) {
-  if (!value) return "";
-  const normalized = value.replace(/^[A-Z]:\\\\/i, "");
-  const codexIndex = normalized.indexOf(".codex");
-  if (codexIndex !== -1) {
-    const rest = normalized.slice(codexIndex + ".codex".length).replace(/^\/+/, "");
-    return rest ? `~/.codex/${rest}` : "~/.codex";
-  }
-  const parts = value.split("/");
-  if (parts.length <= 3) return value;
-  return `${parts.slice(0, 2).join("/")}/.../${parts.slice(-1)}`;
 }
 
 function formatDateLabel(dateValue, locale, timeZone) {
@@ -52,22 +37,14 @@ function formatDateLabel(dateValue, locale, timeZone) {
   return date.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone });
 }
 
-function formatLongDate(dateValue, locale, timeZone) {
-  if (!dateValue) return "--";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric", timeZone });
-}
-
 function getIntensityLevel(count, maxCount) {
   if (count === 0 || maxCount === 0) return 0;
   const ratio = count / maxCount;
-  if (ratio <= 0.1) return 1;
-  if (ratio <= 0.25) return 2;
-  if (ratio <= 0.4) return 3;
-  if (ratio <= 0.6) return 4;
-  if (ratio <= 0.8) return 5;
-  return 6;
+  if (ratio > 0.8) return 5;
+  if (ratio > 0.6) return 4;
+  if (ratio > 0.4) return 3;
+  if (ratio > 0.2) return 2;
+  return 1;
 }
 
 function generateWeeksForYear(year) {
@@ -87,15 +64,12 @@ function generateWeeksForYear(year) {
   while (currentDate <= endDate || currentWeek.length > 0) {
     const dayOfWeek = currentDate.getDay();
     const dateStr = formatDateKey(currentDate);
+    const inRange = currentDate >= startDate && currentDate <= endDate;
 
-    if (currentDate.getFullYear() === year) {
-      currentWeek.push(dateStr);
-    } else {
-      currentWeek.push("");
-    }
+    currentWeek.push({ dateStr: inRange ? dateStr : "", inRange });
 
     if (dayOfWeek === 6) {
-      if (currentWeek.some((d) => d !== "")) {
+      if (currentWeek.some((d) => d.inRange)) {
         weeks.push(currentWeek);
       }
       currentWeek = [];
@@ -105,7 +79,7 @@ function generateWeeksForYear(year) {
     if (currentDate.getFullYear() > year + 1) break;
   }
 
-  if (currentWeek.length && currentWeek.some((d) => d !== "")) {
+  if (currentWeek.length && currentWeek.some((d) => d.inRange)) {
     weeks.push(currentWeek);
   }
 
@@ -119,38 +93,23 @@ function formatDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function sectionHeader(title, tag) {
+function labelText(text) {
   return h(
-    "div",
-    { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
-    h(
-      "span",
-      {
-        style: {
-          fontSize: typography.size.lg,
-          fontWeight: typography.weight.bold,
-        },
+    "span",
+    {
+      style: {
+        textTransform: "uppercase",
+        fontSize: 9,
+        letterSpacing: 1.4,
+        color: colors.text.muted,
+        fontWeight: typography.weight.medium,
       },
-      title
-    ),
-    tag
-      ? h(
-          "span",
-          {
-            style: {
-              fontSize: typography.size.sm,
-              color: colors.text.faint,
-              textTransform: "uppercase",
-              letterSpacing: 1.5,
-            },
-          },
-          tag
-        )
-      : null
+    },
+    text
   );
 }
 
-function statCard(children) {
+function statCard(children, extraStyle = {}) {
   return h(
     "div",
     {
@@ -159,11 +118,13 @@ function statCard(children) {
         backgroundColor: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: layout.radius.lg,
-        padding: spacing[5],
+        padding: 12,
         boxShadow: layout.shadow,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[2],
+        gap: 4,
+        minHeight: 110,
+        ...extraStyle,
       },
     },
     children
@@ -178,11 +139,11 @@ function panel(children, extraStyle = {}) {
         backgroundColor: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: layout.radius.lg,
-        padding: spacing[5],
+        padding: 12,
         boxShadow: layout.shadow,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[4],
+        gap: 8,
         ...extraStyle,
       },
     },
@@ -190,18 +151,44 @@ function panel(children, extraStyle = {}) {
   );
 }
 
-function labelText(text) {
+function panelHeader(title, tag) {
   return h(
-    "span",
+    "div",
     {
       style: {
-        textTransform: "uppercase",
-        fontSize: typography.size.sm,
-        letterSpacing: 2,
-        color: colors.text.faint,
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        marginBottom: 0,
+        gap: 12,
       },
     },
-    text
+    h(
+      "span",
+      {
+        style: {
+          fontSize: 16,
+          fontWeight: typography.weight.bold,
+          letterSpacing: 0.6,
+        },
+      },
+      title
+    ),
+    tag
+      ? h(
+          "span",
+          {
+            style: {
+              fontSize: 9,
+              textTransform: "uppercase",
+              letterSpacing: 1.4,
+              color: colors.text.muted,
+            },
+          },
+          tag
+        )
+      : null
   );
 }
 
@@ -210,22 +197,20 @@ function renderWeekdayChart(counts) {
   const max = Math.max(...safeCounts, 1);
   const maxIndex = safeCounts.findIndex((value) => value === max);
 
-  const barWidth = 24;
-  const barGap = 8;
-
   const bars = safeCounts.map((count, index) => {
-    const height = Math.max(10, Math.round((count / max) * WEEKDAY_BAR_HEIGHT));
+    const height = Math.max(6, Math.round((count / max) * 64));
     const isHighlight = index === maxIndex;
-    const barStyle = {
-      width: barWidth,
-      height,
-      borderRadius: 4,
-      backgroundImage: isHighlight
-        ? "linear-gradient(180deg, rgba(241, 179, 117, 0.85), rgba(255, 255, 255, 0.7))"
-        : "linear-gradient(180deg, rgba(16, 163, 127, 0.65), rgba(255, 255, 255, 0.6))",
-      border: `1px solid ${isHighlight ? "rgba(241, 179, 117, 0.5)" : "rgba(16, 163, 127, 0.3)"}`,
-    };
-    return h("div", { style: barStyle });
+    return h("div", {
+      style: {
+        flex: 1,
+        height,
+        borderRadius: 4,
+        backgroundImage: isHighlight
+          ? "linear-gradient(180deg, rgba(241, 179, 117, 0.85), rgba(255, 255, 255, 0.7))"
+          : "linear-gradient(180deg, rgba(16, 163, 127, 0.65), rgba(255, 255, 255, 0.6))",
+        border: `1px solid ${isHighlight ? "rgba(241, 179, 117, 0.5)" : "rgba(16, 163, 127, 0.3)"}`,
+      },
+    });
   });
 
   const labels = WEEKDAY_LABELS.map((label, index) => {
@@ -234,11 +219,12 @@ function renderWeekdayChart(counts) {
       "div",
       {
         style: {
-          width: barWidth,
-          fontSize: typography.size.xs,
-          color: isHighlight ? colors.text.primary : colors.text.faint,
+          flex: 1,
+          fontSize: 9,
+          color: isHighlight ? colors.text.primary : colors.text.muted,
+          fontWeight: isHighlight ? typography.weight.bold : typography.weight.regular,
           textAlign: "center",
-          borderBottom: isHighlight ? `3px solid ${colors.accent.warm}` : "3px solid transparent",
+          borderBottom: isHighlight ? `2px solid ${colors.accent.warm}` : "2px solid transparent",
           paddingBottom: 2,
         },
       },
@@ -248,7 +234,7 @@ function renderWeekdayChart(counts) {
 
   return h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[2] } },
+    { style: { display: "flex", flexDirection: "column", gap: 4 } },
     h(
       "div",
       {
@@ -256,8 +242,9 @@ function renderWeekdayChart(counts) {
           display: "flex",
           flexDirection: "row",
           alignItems: "flex-end",
-          gap: barGap,
-          height: WEEKDAY_BAR_HEIGHT + 20,
+          gap: 4,
+          height: 64,
+          padding: "2px 2px 0",
         },
       },
       bars
@@ -268,7 +255,8 @@ function renderWeekdayChart(counts) {
         style: {
           display: "flex",
           flexDirection: "row",
-          gap: barGap,
+          gap: 0,
+          marginTop: 4,
         },
       },
       labels
@@ -278,15 +266,19 @@ function renderWeekdayChart(counts) {
 
 function renderHeatmap(activity, maxDailyCount, year) {
   const dailyCounts = activity.dailyCounts || {};
-  const maxStreakDays = new Set(activity.maxStreakDays || []);
+  const streakDays = new Set(activity.maxStreakDays || []);
   const selectedYear = year || new Date().getFullYear();
   const weeks = generateWeeksForYear(selectedYear);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  const CELL_SIZE = 13;
+  const CELL_GAP = 2;
+
+  // Calculate month positions
   const weekIndexByDate = new Map();
   weeks.forEach((week, index) => {
-    week.forEach((dateKey) => {
-      if (dateKey) weekIndexByDate.set(dateKey, index);
+    week.forEach((day) => {
+      if (day.dateStr) weekIndexByDate.set(day.dateStr, index);
     });
   });
 
@@ -304,60 +296,88 @@ function renderHeatmap(activity, maxDailyCount, year) {
   }));
 
   const monthLabels = monthSpans.map((entry) => {
-    const width = entry.span * HEAT_CELL + Math.max(entry.span - 1, 0) * HEAT_GAP;
+    const width = entry.span * CELL_SIZE + Math.max(entry.span - 1, 0) * CELL_GAP;
     return h(
       "div",
       {
         style: {
           width,
-          fontSize: typography.size.xs,
-          color: colors.text.faint,
+          fontSize: 8,
+          color: colors.text.muted,
           textAlign: "left",
+          textTransform: "uppercase",
+          letterSpacing: 0.8,
+          flexShrink: 0,
         },
       },
       months[entry.monthIndex] || "--"
     );
   });
 
-  const heatmapColumns = weeks.map((week) => {
-    const cells = week.map((dateKey) => {
-      if (!dateKey) {
-        return h("div", { style: { width: HEAT_CELL, height: HEAT_CELL, visibility: "hidden" } });
-      }
-      const count = dailyCounts[dateKey] || 0;
-      const level = getIntensityLevel(count, maxDailyCount);
-      const isStreak = maxStreakDays.has(dateKey);
-      return h(
-        "div",
-        {
-          style: {
-            width: HEAT_CELL,
-            height: HEAT_CELL,
-            borderRadius: 3,
-            backgroundColor: colors.heatmap[Math.min(level, colors.heatmap.length - 1)],
-            border: isStreak ? `1px solid ${colors.accent.strong}` : "1px solid transparent",
-          },
+  const weekdayLabels = ["", "Mon", "", "Wed", "", "Fri", ""].map((label) =>
+    h(
+      "span",
+      {
+        style: {
+          height: CELL_SIZE,
+          display: "flex",
+          alignItems: "center",
+          fontSize: 8,
+          color: colors.text.faint,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
         },
-        ""
-      );
+      },
+      label
+    )
+  );
+
+  const heatmapColumns = weeks.map((week) => {
+    const cells = week.map((day) => {
+      if (!day.inRange || !day.dateStr) {
+        return h("div", { style: { width: CELL_SIZE, height: CELL_SIZE, backgroundColor: "transparent" } });
+      }
+      const count = dailyCounts[day.dateStr] || 0;
+      const level = getIntensityLevel(count, maxDailyCount);
+      const isStreak = streakDays.has(day.dateStr);
+      return h("div", {
+        style: {
+          width: CELL_SIZE,
+          height: CELL_SIZE,
+          borderRadius: 2,
+          backgroundColor: colors.heatmap[Math.min(level, colors.heatmap.length - 1)],
+          boxShadow: isStreak ? `inset 0 0 0 2px ${colors.accent.strong}` : "none",
+        },
+      });
     });
 
     return h(
       "div",
-      { style: { display: "flex", flexDirection: "column", gap: HEAT_GAP } },
+      { style: { display: "flex", flexDirection: "column", gap: CELL_GAP } },
       cells
     );
   });
 
   const heatmapFoot = h(
     "div",
-    { style: { display: "flex", flexDirection: "row", alignItems: "center", gap: spacing[2], fontSize: typography.size.xs, color: colors.text.faint } },
+    {
+      style: {
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 6,
+        fontSize: 9,
+        color: colors.text.muted,
+        paddingTop: 2,
+      },
+    },
     h("span", null, "Less"),
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", gap: 4 } },
+      { style: { display: "flex", flexDirection: "row", gap: 3 } },
       colors.heatmap.slice(0, 6).map((color) =>
-        h("div", { style: { width: 12, height: 12, borderRadius: 3, backgroundColor: color } })
+        h("div", { style: { width: 10, height: 10, borderRadius: 2, backgroundColor: color } })
       )
     ),
     h("span", null, "More")
@@ -365,22 +385,92 @@ function renderHeatmap(activity, maxDailyCount, year) {
 
   return h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[3] } },
+    { style: { display: "flex", flexDirection: "column", gap: 4 } },
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", gap: HEAT_GAP } },
-      monthLabels
-    ),
-    h(
-      "div",
-      { style: { display: "flex", flexDirection: "row", gap: HEAT_GAP } },
-      heatmapColumns
+      { style: { display: "flex", flexDirection: "row", gap: 8, width: "100%" } },
+      // Weekday labels column
+      h(
+        "div",
+        {
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            gap: CELL_GAP,
+            paddingTop: 14,
+            width: 24,
+            flexShrink: 0,
+          },
+        },
+        weekdayLabels
+      ),
+      // Heatmap content
+      h(
+        "div",
+        { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 } },
+        h(
+          "div",
+          { style: { display: "flex", flexDirection: "row", gap: CELL_GAP, paddingLeft: 1, height: 14 } },
+          monthLabels
+        ),
+        h(
+          "div",
+          { style: { display: "flex", flexDirection: "row", gap: CELL_GAP } },
+          heatmapColumns
+        )
+      )
     ),
     heatmapFoot
   );
 }
 
-function renderModelList(items, formatter) {
+function renderHighlight(model, currencyFormatter) {
+  // HTML uses inline spans, so we use flex row with wrap
+  return h(
+    "div",
+    {
+      style: {
+        backgroundImage: "linear-gradient(145deg, rgba(16, 163, 127, 0.12), rgba(255, 255, 255, 0.8))",
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 8,
+        border: "1px solid rgba(16, 163, 127, 0.2)",
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "baseline",
+        gap: 8,
+      },
+    },
+    h(
+      "span",
+      {
+        style: {
+          fontSize: 9,
+          textTransform: "uppercase",
+          letterSpacing: 1.4,
+          color: colors.text.muted,
+          fontWeight: typography.weight.medium,
+        },
+      },
+      "#1"
+    ),
+    h(
+      "span",
+      { style: { fontSize: 18, fontWeight: typography.weight.bold } },
+      model ? model.name : "No data"
+    ),
+    h(
+      "span",
+      { style: { fontSize: 11, color: colors.text.muted } },
+      model
+        ? `${((model.percentage || 0) * 100).toFixed(1)}% of tokens · ${currencyFormatter.format(model.costUSD || 0)}`
+        : "Run the data build"
+    )
+  );
+}
+
+function renderModelList(items, currencyFormatter) {
   if (!items.length) {
     return h(
       "div",
@@ -390,7 +480,7 @@ function renderModelList(items, formatter) {
           borderRadius: 12,
           border: "1px solid rgba(48, 36, 24, 0.06)",
           padding: 12,
-          fontSize: typography.size.sm,
+          fontSize: 12,
           color: colors.text.faint,
         },
       },
@@ -400,41 +490,40 @@ function renderModelList(items, formatter) {
 
   return h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[2] } },
-    items.map((item, index) => {
-      const percentage = item.percentage ? `${(item.percentage * 100).toFixed(1)}%` : "";
-      return h(
+    { style: { display: "flex", flexDirection: "column", gap: 8 } },
+    items.map((item, index) =>
+      h(
         "div",
         {
           style: {
             backgroundColor: colors.surfaceStrong,
-            borderRadius: 12,
+            borderRadius: 10,
             border: "1px solid rgba(48, 36, 24, 0.06)",
-            padding: 10,
+            padding: 8,
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            gap: spacing[3],
+            gap: 4,
           },
         },
         h(
           "div",
-          { style: { width: 32, textAlign: "right", fontWeight: typography.weight.bold, color: colors.accent.primary } },
-          String(index + 1).padStart(2, "0")
+          { style: { width: 28, textAlign: "right", fontWeight: typography.weight.bold, color: colors.accent.primary } },
+          `#${index + 2}`
         ),
         h(
           "div",
-          { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 } },
-          h("span", { style: { fontSize: typography.size.md } }, item.name),
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, percentage ? `${percentage} share` : "")
+          { style: { flex: 1, display: "flex", flexDirection: "column", gap: 0 } },
+          h("span", { style: { fontSize: 12 } }, item.name),
+          h("span", { style: { fontSize: 9, color: colors.text.faint } }, `${((item.percentage || 0) * 100).toFixed(1)}% of tokens`)
         ),
         h(
           "div",
-          { style: { fontSize: typography.size.sm, color: colors.text.muted, textAlign: "right" } },
-          `${formatter.format(item.tokens ?? 0)} tokens`
+          { style: { fontSize: 11, color: colors.text.muted, textAlign: "right" } },
+          currencyFormatter.format(item.costUSD || 0)
         )
-      );
-    })
+      )
+    )
   );
 }
 
@@ -442,7 +531,6 @@ export function buildWrappedTemplate(data) {
   const summary = data.summary || {};
   const activity = data.activity || {};
   const models = Array.isArray(data.models) ? data.models : [];
-  const notes = data.notes || {};
   const config = data.config || {};
   const locale = config.locale || "en-US";
   const timeZone = config.timezone && config.timezone !== "local" ? config.timezone : undefined;
@@ -450,10 +538,17 @@ export function buildWrappedTemplate(data) {
   const numberFormatter = new Intl.NumberFormat(locale);
   const shortFormatter = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  const percentFormatter = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+
+  const formatCompact = (value) => {
+    const safe = Number(value || 0);
+    if (safe >= 1_000_000) return shortFormatter.format(safe);
+    return numberFormatter.format(safe);
+  };
 
   const year = data.year ?? new Date().getFullYear();
   const generatedAt = formatDateLabel(data.generatedAt, locale, timeZone);
-  const sessionsDir = shortenPath(notes.sessionsDir || "~/.codex/sessions");
+  const sessionsCount = numberFormatter.format(summary.sessions || 0);
 
   const mostActiveDay = summary.mostActiveDay;
   const mostActiveDate = mostActiveDay?.date
@@ -464,147 +559,132 @@ export function buildWrappedTemplate(data) {
     : "--";
 
   const highlightModel = models[0];
+  const topModels = models.slice(1, 3); // #2 and #3
 
+  // Title with "Wrapped" suffix
+  const baseTitle = config.title || "Codex";
+  const displayTitle = /wrapped/i.test(baseTitle) ? baseTitle : `${baseTitle} Wrapped`;
+
+  // Header
   const header = h(
     "div",
-    { style: { display: "flex", flexDirection: "column", gap: spacing[3] } },
+    {
+      style: {
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+      },
+    },
+    // Brand
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
+      { style: { display: "flex", flexDirection: "row", gap: 10, alignItems: "center" } },
       h(
         "div",
-        { style: { display: "flex", flexDirection: "row", gap: spacing[4], alignItems: "center" } },
-        h(
-          "div",
-          {
-            style: {
-              width: 48,
-              height: 48,
-              borderRadius: 16,
-              backgroundColor: colors.accent.primary,
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: typography.size.xl,
-              fontWeight: typography.weight.bold,
-            },
+        {
+          style: {
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: colors.accent.primary,
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            fontWeight: typography.weight.bold,
+            boxShadow: "0 8px 16px rgba(16, 163, 127, 0.22)",
           },
-          "O"
-        ),
-        h(
-          "div",
-          { style: { display: "flex", flexDirection: "column", gap: 4 } },
-          h(
-            "span",
-            { style: { fontSize: typography.size["5xl"], fontWeight: typography.weight.bold } },
-            config.title || "Codex"
-          ),
-          h(
-            "span",
-            { style: { fontSize: typography.size.md, color: colors.text.muted } },
-            config.subtitle || "Your year in the Codex CLI"
-          )
-        )
+        },
+        "C"
       ),
       h(
         "div",
-        { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 } },
+        { style: { display: "flex", flexDirection: "column", gap: 4 } },
         h(
           "span",
-          { style: { textTransform: "uppercase", fontSize: typography.size.sm, letterSpacing: 3, color: colors.text.faint } },
-          "wrapped"
+          { style: { fontSize: 28, fontWeight: typography.weight.bold, letterSpacing: 0.6 } },
+          displayTitle
         ),
         h(
           "span",
-          { style: { fontSize: typography.size["7xl"], fontWeight: typography.weight.bold, color: colors.accent.strong, letterSpacing: 3 } },
-          String(year)
+          { style: { fontSize: 11, color: colors.text.muted } },
+          config.subtitle || "Your year in the Codex CLI"
         )
       )
     ),
+    // Wrapped year
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[2] } },
+      { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0 } },
       h(
-        "div",
+        "span",
         {
           style: {
-            paddingTop: 6,
-            paddingBottom: 6,
-            paddingLeft: 12,
-            paddingRight: 12,
-            borderRadius: 999,
-            backgroundColor: "rgba(255, 255, 255, 0.6)",
-            border: `1px solid ${colors.border}`,
-            fontSize: typography.size.sm,
+            textTransform: "uppercase",
+            fontSize: 9,
+            letterSpacing: 1.6,
             color: colors.text.faint,
-            display: "flex",
-            flexDirection: "row",
-            gap: 6,
-            alignItems: "center",
           },
         },
-        "Generated",
-        generatedAt
+        "wrapped"
       ),
       h(
-        "div",
-        {
-          style: {
-            paddingTop: 6,
-            paddingBottom: 6,
-            paddingLeft: 12,
-            paddingRight: 12,
-            borderRadius: 999,
-            backgroundColor: "rgba(255, 255, 255, 0.6)",
-            border: `1px solid ${colors.border}`,
-            fontSize: typography.size.sm,
-            color: colors.text.faint,
-            display: "flex",
-            flexDirection: "row",
-            gap: 6,
-            alignItems: "center",
-          },
-        },
-        "Sessions",
-        sessionsDir
+        "span",
+        { style: { fontSize: 42, fontWeight: typography.weight.bold, color: colors.accent.strong, letterSpacing: 1 } },
+        String(year)
       )
     )
   );
 
+  // Meta pill
+  const metaPill = h(
+    "div",
+    { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8 } },
+    h(
+      "div",
+      {
+        style: {
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingTop: 4,
+          paddingBottom: 4,
+          paddingLeft: 8,
+          paddingRight: 8,
+          borderRadius: 999,
+          backgroundColor: "rgba(255, 255, 255, 0.6)",
+          border: `1px solid ${colors.border}`,
+          fontSize: 9,
+          color: colors.text.muted,
+          fontWeight: typography.weight.medium,
+        },
+      },
+      h("span", { style: { color: colors.text.faint, textTransform: "uppercase", letterSpacing: 1 } }, "Generated"),
+      h("span", { style: { color: colors.text.primary, fontWeight: 600 } }, generatedAt),
+      h("span", { style: { color: colors.text.faint, opacity: 0.6 } }, "•"),
+      h("span", { style: { color: colors.text.faint, textTransform: "uppercase", letterSpacing: 1 } }, "Sessions"),
+      h("span", { style: { color: colors.text.primary, fontWeight: 600 } }, sessionsCount)
+    )
+  );
+
+  // Top stats row
   const topStats = h(
     "div",
-    { style: { display: "flex", flexDirection: "row", gap: spacing[4] } },
+    { style: { display: "flex", flexDirection: "row", gap: 8 } },
     statCard([
       labelText("Started"),
-      h(
-        "span",
-        { style: { fontSize: typography.size.md, color: colors.text.muted } },
-        formatLongDate(summary.firstSessionDate, locale, timeZone)
-      ),
-      h(
-        "span",
-        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.medium } },
-        `${numberFormatter.format(summary.daysSinceFirstSession || 0)} days ago`
-      ),
+      h("span", { style: { fontSize: 11, color: colors.text.muted } }, formatShortDate(summary.firstSessionDate, locale, timeZone)),
+      h("span", { style: { fontSize: 24, fontWeight: typography.weight.bold, lineHeight: 1.2 } }, `${numberFormatter.format(summary.daysSinceFirstSession || 0)} days ago`),
     ]),
     statCard([
       labelText("Most Active Day"),
-      h(
-        "span",
-        { style: { fontSize: typography.size.md, color: colors.text.muted } },
-        mostActiveWeekday
-      ),
-      h(
-        "span",
-        { style: { fontSize: typography.size["4xl"], fontWeight: typography.weight.medium } },
-        mostActiveDate
-      ),
-      h(
-        "span",
-        { style: { fontSize: typography.size.sm, color: colors.text.muted } },
-        `${numberFormatter.format(mostActiveDay?.count || 0)} turns`
-      ),
+      h("span", { style: { fontSize: 11, color: colors.text.muted } }, mostActiveWeekday),
+      h("span", { style: { fontSize: 24, fontWeight: typography.weight.bold, lineHeight: 1.2 } }, mostActiveDate),
+      h("span", { style: { fontSize: 11, color: colors.text.muted } }, `${formatCompact(mostActiveDay?.count || 0)} turns`),
     ]),
     statCard([
       labelText("Weekly Activity"),
@@ -612,64 +692,31 @@ export function buildWrappedTemplate(data) {
     ])
   );
 
+  // Heatmap panel
+  const activeDays = Object.keys(activity.dailyCounts || {}).length;
   const heatmapPanel = panel([
-    h(
-      "div",
-      { style: { display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" } },
-      h("span", { style: { fontSize: typography.size.lg, fontWeight: typography.weight.bold } }, "Activity"),
-      h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, `Jan - Dec | ${summary.maxDailyCount || 0} max/day`)
-    ),
+    panelHeader("Activity", `${activeDays} active days`),
     renderHeatmap(activity, summary.maxDailyCount || 0, year),
-  ]);
+  ], { padding: "12px 14px" });
 
-  const highlightBlock = h(
-    "div",
-    {
-      style: {
-        backgroundImage: "linear-gradient(145deg, rgba(16, 163, 127, 0.12), rgba(255, 255, 255, 0.8))",
-        borderRadius: 14,
-        padding: 12,
-        border: "1px solid rgba(16, 163, 127, 0.2)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      },
-    },
-    h(
-      "span",
-      { style: { fontSize: typography.size.sm, textTransform: "uppercase", letterSpacing: 2, color: colors.text.faint } },
-      config.highlight_label || "Signal"
-    ),
-    h(
-      "span",
-      { style: { fontSize: typography.size["2xl"], fontWeight: typography.weight.medium } },
-      highlightModel ? highlightModel.name : "No data"
-    ),
-    h(
-      "span",
-      { style: { fontSize: typography.size.sm, color: colors.text.muted } },
-      highlightModel
-        ? `${shortFormatter.format(highlightModel.tokens)} tokens | ${currencyFormatter.format(highlightModel.costUSD || 0)}`
-        : "Run the data build"
-    )
-  );
-
+  // Top Models panel
   const topModelsPanel = panel([
-    sectionHeader("Top Models", "By total tokens"),
-    highlightBlock,
-    renderModelList(models, shortFormatter),
-  ]);
+    panelHeader("Top Models", "By total tokens"),
+    renderHighlight(highlightModel, currencyFormatter),
+    renderModelList(topModels, currencyFormatter),
+  ], { flex: 1 });
 
+  // Cache Efficiency panel
   const cachePanel = panel([
-    sectionHeader("Cache Efficiency", "Prompt caching impact"),
+    panelHeader("Cache Efficiency", "Prompt caching impact"),
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[3] } },
+      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8 } },
       [
-        { label: "Cache Read", value: numberFormatter.format(summary.cachedInputTokens || 0) },
-        { label: "Cache Hit", value: `${((summary.cacheHitRate || 0) * 100).toFixed(1)}%` },
-        { label: "Input Tokens", value: numberFormatter.format(summary.inputTokens || 0) },
-        { label: "Output Tokens", value: numberFormatter.format(summary.outputTokens || 0) },
+        { label: "Cache Read", value: formatCompact(summary.cachedInputTokens || 0) },
+        { label: "Cache Hit", value: percentFormatter.format(summary.cacheHitRate || 0) },
+        { label: "Input Tokens", value: formatCompact(summary.inputTokens || 0) },
+        { label: "Output Tokens", value: formatCompact(summary.outputTokens || 0) },
       ].map((metric) =>
         h(
           "div",
@@ -678,60 +725,86 @@ export function buildWrappedTemplate(data) {
               backgroundColor: colors.surfaceStrong,
               borderRadius: 12,
               border: "1px solid rgba(48, 36, 24, 0.06)",
-              padding: 12,
+              padding: 8,
               display: "flex",
               flexDirection: "column",
-              gap: 6,
-              width: 210,
+              gap: 4,
+              flex: 1,
+              minWidth: 140,
             },
           },
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, metric.label),
-          h("span", { style: { fontSize: typography.size.lg, fontWeight: typography.weight.medium } }, metric.value)
+          h("span", { style: { fontSize: 9, color: colors.text.muted, textTransform: "uppercase", letterSpacing: 1.4 } }, metric.label),
+          h("span", { style: { fontSize: 14, fontWeight: typography.weight.bold } }, metric.value)
         )
       )
     ),
-  ]);
+  ], { flex: 1 });
 
-  const totalsPanel = panel([
-    sectionHeader("Totals", "Year-wide snapshot"),
+  // Totals panel - 3 columns grid like HTML
+  const totalsStats = [
+    { label: "Sessions", value: numberFormatter.format(summary.sessions || 0) },
+    { label: "Turns", value: formatCompact(summary.turns || 0) },
+    { label: "Total Tokens", value: formatCompact(summary.totalTokens || 0) },
+    { label: "Cost", value: currencyFormatter.format(summary.costUSD || 0) },
+    { label: "Max Streak", value: `${summary.maxStreak || 0} days` },
+    { label: "Cache Hit Rate", value: percentFormatter.format(summary.cacheHitRate || 0) },
+  ];
+
+  const statBox = (stat) =>
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: spacing[3] } },
-      [
-        { label: "Sessions", value: numberFormatter.format(summary.sessions || 0) },
-        { label: "Turns", value: numberFormatter.format(summary.turns || 0) },
-        { label: "Total Tokens", value: numberFormatter.format(summary.totalTokens || 0) },
-        { label: "Cost", value: currencyFormatter.format(summary.costUSD || 0) },
-        { label: "Max Streak", value: `${summary.maxStreak || 0} days` },
-        { label: "Cache Hit Rate", value: `${((summary.cacheHitRate || 0) * 100).toFixed(1)}%` },
-      ].map((stat) =>
-        h(
-          "div",
-          {
-            style: {
-              backgroundColor: colors.surfaceStrong,
-              borderRadius: 14,
-              border: "1px solid rgba(48, 36, 24, 0.06)",
-              padding: 14,
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              width: 210,
-            },
-          },
-          h("span", { style: { fontSize: typography.size.sm, color: colors.text.faint } }, stat.label),
-          h("span", { style: { fontSize: typography.size.xl, fontWeight: typography.weight.medium } }, stat.value)
-        )
+      {
+        style: {
+          backgroundColor: colors.surfaceStrong,
+          borderRadius: 14,
+          border: "1px solid rgba(48, 36, 24, 0.06)",
+          padding: 8,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          flex: 1,
+        },
+      },
+      h("span", { style: { fontSize: 9, color: colors.text.muted, textTransform: "uppercase", letterSpacing: 1.4 } }, stat.label),
+      h("span", { style: { fontSize: 18, fontWeight: typography.weight.bold } }, stat.value)
+    );
+
+  const totalsPanel = panel([
+    panelHeader("Totals", "Year-wide snapshot"),
+    h(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: 8 } },
+      // First row: Sessions, Turns, Total Tokens
+      h(
+        "div",
+        { style: { display: "flex", flexDirection: "row", gap: 8 } },
+        totalsStats.slice(0, 3).map(statBox)
+      ),
+      // Second row: Cost, Max Streak, Cache Hit Rate
+      h(
+        "div",
+        { style: { display: "flex", flexDirection: "row", gap: 8 } },
+        totalsStats.slice(3, 6).map(statBox)
       )
     ),
-  ], { padding: 22 });
+  ], { padding: 12 });
 
+  // Footer with bottom padding
   const footer = h(
     "div",
-    { style: { textAlign: "center", fontSize: typography.size.sm, color: colors.text.faint } },
+    { 
+      style: { 
+        textAlign: "center", 
+        fontSize: 9, 
+        color: colors.text.faint, 
+        marginTop: 2,
+        paddingBottom: layout.padding.bottom,
+      } 
+    },
     "@stometaverse"
   );
 
+  // Card-only output (no outer canvas wrapper)
   return h(
     "div",
     {
@@ -740,27 +813,27 @@ export function buildWrappedTemplate(data) {
         height: layout.canvas.height,
         display: "flex",
         flexDirection: "column",
-        gap: spacing[4],
+        gap: 10,
         paddingLeft: layout.padding.horizontal,
         paddingRight: layout.padding.horizontal,
         paddingTop: layout.padding.top,
-        paddingBottom: layout.padding.bottom,
         fontFamily: typography.fontFamily,
         color: colors.text.primary,
-        backgroundColor: colors.background,
         backgroundImage:
           `radial-gradient(circle at 15% 10%, rgba(16, 163, 127, 0.18), transparent 52%), ` +
           `radial-gradient(circle at 85% 15%, rgba(241, 179, 117, 0.24), transparent 55%), ` +
           `radial-gradient(circle at 70% 85%, rgba(229, 139, 122, 0.2), transparent 60%), ` +
           `linear-gradient(160deg, ${colors.background}, ${colors.backgroundAlt})`,
+        borderRadius: layout.radius.card,
       },
     },
     header,
+    metaPill,
     topStats,
     heatmapPanel,
     h(
       "div",
-      { style: { display: "flex", flexDirection: "row", gap: spacing[4] } },
+      { style: { display: "flex", flexDirection: "row", gap: 8 } },
       topModelsPanel,
       cachePanel
     ),
