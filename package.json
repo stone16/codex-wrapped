@@ -1,6 +1,6 @@
 {
   "name": "codex-usage-wrapped",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Generate a Spotify Wrapped-style summary of your Codex CLI usage",
   "keywords": [
     "codex",
